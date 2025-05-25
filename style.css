@@ -1,58 +1,77 @@
 body {
   font-family: 'Segoe UI', 'Arial', sans-serif;
-  background: linear-gradient(135deg, #e8f5e9 60%, #bbdefb 100%);
+  background: linear-gradient(120deg, #e8f5e9 60%, #b3e5fc 100%);
   margin: 0;
   padding: 0;
   min-height: 100vh;
   color: #253423;
 }
 
+#navbar {
+  display: flex;
+  gap: 12px;
+  background: #f4ffe8;
+  padding: 12px 18px 7px 18px;
+  box-shadow: 0 2px 18px #b3e5fc33;
+  justify-content: center;
+}
+.route-btn {
+  background: #c8e6c9;
+  border: none;
+  border-radius: 7px 7px 0 0;
+  padding: 7px 17px;
+  color: #205921;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: -2px;
+  transition: background 0.15s, color 0.15s;
+}
+.route-btn.active,
+.route-btn:focus {
+  background: #fff;
+  color: #1976d2;
+}
+
 .container {
-  margin: 36px auto;
+  margin: 30px auto 0 auto;
   background: #fff;
   border-radius: 18px;
   box-shadow: 0 4px 22px #2232;
-  padding: 28px 30px 18px 30px;
-  max-width: 430px;
-  min-width: 320px;
+  padding: 25px 18px 18px 18px;
+  max-width: 480px;
+  min-width: 300px;
+  min-height: 400px;
 }
 
 h1 {
   color: #2e7d32;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   letter-spacing: 2px;
   text-shadow: 0 1px 0 #d8fded;
 }
 
-.instructions {
-  background: #f4ffe8;
-  padding: 10px 8px;
-  margin: 6px 0 18px 0;
-  border-radius: 8px;
-  font-size: 1.01em;
-  color: #556b2f;
-}
-
 .counters {
-  font-size: 1.13em;
+  font-size: 1.11em;
   margin-bottom: 10px;
   color: #344c1e;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0.5em;
+  gap: 0.7em;
+  flex-wrap: wrap;
 }
 .counters .sep { color: #99bfa8; }
 
 .big-btn {
   background: linear-gradient(90deg, #fbc02d, #ffeb3b 90%);
   color: #344c1e;
-  padding: 13px 34px;
-  font-size: 1.2em;
+  padding: 13px 36px;
+  font-size: 1.18em;
   border-radius: 18px;
   border: none;
   box-shadow: 0 2px 6px #8884;
-  margin: 13px 0 18px 0;
+  margin: 12px 0 17px 0;
   cursor: pointer;
   font-weight: bold;
   transition: transform 0.08s;
@@ -63,8 +82,8 @@ h1 {
   position: relative;
   background: linear-gradient(90deg, #f9fbe7 75%, #b3e5fc 100%);
   border-radius: 13px;
-  height: 145px;
-  margin: 13px 0 13px 0;
+  height: 150px;
+  margin: 10px 0 13px 0;
   overflow: hidden;
   box-shadow: 0 0 0 #0000, 0 2px 10px #bbdefb55;
   border: 1.5px solid #dceee6;
@@ -76,42 +95,51 @@ h1 {
   position: absolute;
   width: 42px;
   height: 42px;
-  transition: transform 0.15s;
+  transition: transform 0.13s, filter 0.3s;
   pointer-events: all;
   cursor: pointer;
-  opacity: 0.93;
+  opacity: 0.92;
   filter: drop-shadow(0 1.5px 5px #8882);
   z-index: 2;
-  animation: floatInsect 3s infinite alternate ease-in-out;
+  animation: floatInsect 3.3s infinite alternate cubic-bezier(.63,-0.32,.62,1.34);
 }
 @keyframes floatInsect {
-  0% {transform: translateY(0px);}
-  100% {transform: translateY(8px);}
+  0% {transform: translateY(0px) scale(1);}
+  100% {transform: translateY(8px) scale(1.03);}
 }
 
 .burst {
   position: absolute;
   font-weight: bold;
-  font-size: 1.13em;
+  font-size: 1.1em;
   color: #43a047;
   opacity: 1;
   pointer-events: none;
-  left: 180px;
-  top: 85px;
+  left: 170px;
+  top: 80px;
   user-select: none;
+  z-index: 9;
+  filter: drop-shadow(0 1.5px 5px #9fc99980);
 }
 
-#habitatList, #upgradeList {
+.section-title {
+  margin-top: 16px;
+  color: #263238;
+  font-size: 1.06em;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+#habitatList, #upgradeList, #buffList {
   background: #f6ffec;
   border-radius: 11px;
   padding: 11px 10px 4px 10px;
-  margin-bottom: 15px;
-  min-height: 30px;
+  margin-bottom: 14px;
+  min-height: 34px;
 }
-
-.up-btn {
+.up-btn, .buff-btn {
   display: block;
-  margin: 10px 0;
+  margin: 9px 0;
   width: 100%;
   background: #b3e5fc;
   color: #2c387e;
@@ -123,49 +151,90 @@ h1 {
   transition: background 0.2s;
   box-shadow: 0 1px 5px #aaa3;
   text-align: left;
+  font-weight: 500;
 }
-.up-btn:disabled {
+.up-btn:disabled, .buff-btn:disabled {
   background: #e3e3e3;
   color: #9a9a9a;
   cursor: default;
 }
 
-h2 {
-  font-size: 1.09em;
-  color: #263238;
-  margin-top: 15px;
-  margin-bottom: 4px;
-  letter-spacing: 1px;
-  font-weight: bold;
+.species-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 0 0;
 }
-
-#speciesList {
-  margin: 8px 0 6px 0;
-  min-height: 24px;
-}
-
-.species-bar {
-  margin: 4px 5px 2px 0;
-  font-size: 1.07em;
-  color: #44711f;
-  display: inline-block;
-  padding: 2px 7px 2px 3px;
+.species-card {
   background: #f9fff0;
-  border-radius: 9px;
-  box-shadow: 0 0.5px 2px #d2e9d933;
+  border-radius: 10px;
+  box-shadow: 0 1px 8px #d2e9d930;
+  padding: 9px 14px 8px 9px;
+  min-width: 110px;
+  flex: 1 0 36%;
+  margin: 0 0 4px 0;
+  transition: transform 0.15s;
 }
+.species-card:hover { transform: scale(1.035);}
 .species-icon {
   display: inline-block;
   margin-right: 7px;
-  font-size: 1.4em;
+  font-size: 1.37em;
   vertical-align: middle;
   filter: drop-shadow(0 1.5px 5px #6662);
 }
+.species-name { font-weight: bold;}
+.species-rare { font-size: 0.96em; color: #478ee6; margin-left: 4px;}
+.species-desc { color: #537c4c; font-size: 0.97em;}
 
-.footer {
-  margin: 20px 0 3px 0;
-  color: #809688;
+.badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #ffe082 70%, #fbc02d 100%);
+  color: #926700;
+  border-radius: 8px;
   font-size: 0.93em;
-  text-align: center;
+  padding: 2px 7px;
+  margin-left: 6px;
+  font-weight: 600;
 }
-.footer span { color: #43a047; }
+
+.buff-active {
+  background: #ffe082 !important;
+  color: #296d39 !important;
+  box-shadow: 0 1.5px 10px #ffd74070;
+}
+
+#notifZone {
+  position: fixed;
+  left: 0; right: 0;
+  top: 15px;
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.notif {
+  min-width: 210px;
+  background: #ffffffcc;
+  color: #2e7d32;
+  border-left: 5px solid #43a047;
+  border-radius: 7px;
+  font-size: 1em;
+  padding: 7px 18px;
+  margin: 3px 0;
+  box-shadow: 0 2px 18px #90caf9aa;
+  animation: notifIn 0.9s cubic-bezier(.53,-0.16,.72,1.38);
+}
+@keyframes notifIn {
+  0% {transform: translateY(-30px) scale(0.9); opacity: 0;}
+  90% {opacity: 1;}
+  100% {transform: translateY(0) scale(1);}
+}
+
+/* Responsive tweaks */
+@media (max-width: 600px) {
+  .container {max-width:98vw; min-width:0; padding: 9vw 1vw 2vw 1vw;}
+  #navbar {flex-wrap: wrap; gap: 4px; padding: 7px 2vw;}
+  .species-card {min-width: 88px;}
+}
