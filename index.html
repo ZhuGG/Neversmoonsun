@@ -3,37 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Insectarium Idle</title>
+  <title>Insectarium Idle Deluxe</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Insectarium Idle</h1>
-    <div class="instructions">
-      Collecte des insectes 🐞 en cliquant ou en automatisant ton insectarium.<br>
-      Découvre des espèces et développe tes habitats&nbsp;!
-    </div>
-    <div class="counters">
-      <span>Insectes : <span id="insects">0</span></span>
-      <span class="sep">|</span>
-      <span>Auto/sec : <span id="ips">0</span></span>
-    </div>
-    <div id="insectZone" title="Clique sur la zone ou sur les insectes pour les attraper !"></div>
-    <button class="big-btn" id="catchBtn">Attraper un insecte 🐞</button>
-
-    <h2>Habitats et Automatisations</h2>
-    <div id="habitatList"></div>
-
-    <h2>Améliorations</h2>
-    <div id="upgradeList"></div>
-
-    <h2>Espèces découvertes</h2>
-    <div id="speciesList"></div>
-
-    <div class="footer">
-      By ChatGPT, 2025 • <span>Inspire-toi de la nature !</span>
-    </div>
+  <div id="navbar">
+    <button data-route="main" class="route-btn">Insectarium</button>
+    <button data-route="species" class="route-btn">Espèces</button>
+    <button data-route="upgrades" class="route-btn">Améliorations</button>
+    <button data-route="buffs" class="route-btn">Buffs & Bonus</button>
+    <button data-route="about" class="route-btn">À propos</button>
   </div>
+  <div class="container" id="app"></div>
+  <div class="notif-zone" id="notifZone"></div>
   <script src="main.js"></script>
 </body>
 </html>
