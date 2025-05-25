@@ -1,4 +1,4 @@
-// === ROUTING & STATE ===
+// ROUTING & STATE
 const routes = {
   main: renderMain,
   species: renderSpecies,
@@ -8,6 +8,7 @@ const routes = {
 };
 let currentRoute = "main";
 
+// --- STATE ---
 let insects = 0;
 let insectsPerClick = 1;
 let insectsPerSec = 0;
@@ -15,27 +16,34 @@ let discovered = {0: true};
 let unlockedSpecies = 1;
 let autoBonus = 1.0;
 let buffsActive = [];
-let buffsAvailable = [];
 let buffsTimer = {};
+let adn = 0;
+let totalMutations = 0;
+
+// --- DATA ---
 
 const species = [
-  {name: "Coccinelle", emoji: "🐞", color: "#e53935", desc: "Petite et bénéfique.", chance: 0.66, baseRate: 1, rare: false, buff: "Clic chanceux"},
-  {name: "Abeille", emoji: "🐝", color: "#ffd600", desc: "Pollinisatrice infatigable.", chance: 0.13, baseRate: 4, rare: false, buff: "Ruche Turbo"},
-  {name: "Fourmi", emoji: "🐜", color: "#43a047", desc: "Travailleuse acharnée.", chance: 0.08, baseRate: 7, rare: false, buff: "Colonie Express"},
-  {name: "Papillon", emoji: "🦋", color: "#3f51b5", desc: "Éphémère et élégant.", chance: 0.06, baseRate: 13, rare: true, buff: "Pluie de pollen"},
-  {name: "Libellule", emoji: "🦗", color: "#00bcd4", desc: "Rapide et agile.", chance: 0.035, baseRate: 25, rare: true, buff: "Pluie d’insectes"},
-  {name: "Scarabée", emoji: "🪲", color: "#926c33", desc: "Solide et rare.", chance: 0.018, baseRate: 60, rare: true, buff: "Scaraboost"},
-  {name: "Luciole", emoji: "🪰", color: "#f6ff00", desc: "Brille dans la nuit. Active le Super Click !", chance: 0.007, baseRate: 130, rare: true, buff: "Super Click"},
+  {name: "Coccinelle", emoji: "🐞", color: "#e53935", desc: "Petite et bénéfique.", chance: 0.52, baseRate: 1, rare: false, buff: "Clic chanceux"},
+  {name: "Abeille", emoji: "🐝", color: "#ffd600", desc: "Pollinisatrice infatigable.", chance: 0.12, baseRate: 4, rare: false, buff: "Ruche Turbo"},
+  {name: "Fourmi", emoji: "🐜", color: "#43a047", desc: "Travailleuse acharnée.", chance: 0.07, baseRate: 7, rare: false, buff: "Colonie Express"},
+  {name: "Papillon", emoji: "🦋", color: "#3f51b5", desc: "Éphémère et élégant.", chance: 0.07, baseRate: 15, rare: true, buff: "Pluie de pollen"},
+  {name: "Libellule", emoji: "🦗", color: "#00bcd4", desc: "Rapide et agile.", chance: 0.04, baseRate: 28, rare: true, buff: "Pluie d’insectes"},
+  {name: "Scarabée", emoji: "🪲", color: "#926c33", desc: "Solide et rare.", chance: 0.022, baseRate: 60, rare: true, buff: "Scaraboost"},
+  {name: "Luciole", emoji: "🪰", color: "#f6ff00", desc: "Brille dans la nuit. Active le Super Click !", chance: 0.012, baseRate: 140, rare: true, buff: "Super Click"},
+  {name: "Cigale", emoji: "🐝", color: "#e6ce51", desc: "Chante l'été, booste les abeilles.", chance: 0.008, baseRate: 120, rare: true, buff: "Chant tonitruant"},
+  {name: "Mante", emoji: "🕷️", color: "#81d4fa", desc: "Chasseuse rare, dope la prod auto.", chance: 0.003, baseRate: 400, rare: true, buff: "Effet Prédatrice"},
 ];
 
 const habitats = [
   {name:"Terrarium à Coccinelles", rate: 1, cost: 15, species:0, owned:0},
   {name:"Ruche modeste", rate: 4, cost: 60, species:1, owned:0},
-  {name:"Fourmilière", rate: 12, cost: 200, species:2, owned:0},
-  {name:"Jardin à papillons", rate: 32, cost: 1000, species:3, owned:0},
-  {name:"Étang à libellules", rate: 80, cost: 3300, species:4, owned:0},
-  {name:"Dôme à scarabées", rate: 180, cost: 12000, species:5, owned:0},
-  {name:"Boîte à lucioles", rate: 420, cost: 39000, species:6, owned:0},
+  {name:"Fourmilière", rate: 12, cost: 210, species:2, owned:0},
+  {name:"Jardin à papillons", rate: 38, cost: 1100, species:3, owned:0},
+  {name:"Étang à libellules", rate: 98, cost: 3800, species:4, owned:0},
+  {name:"Dôme à scarabées", rate: 210, cost: 16000, species:5, owned:0},
+  {name:"Boîte à lucioles", rate: 500, cost: 47000, species:6, owned:0},
+  {name:"Chênaie à cigales", rate: 1350, cost: 140000, species:7, owned:0},
+  {name:"Vivarium de mantes", rate: 3800, cost: 330000, species:8, owned:0},
 ];
 
 const upgrades = [
@@ -44,19 +52,22 @@ const upgrades = [
   {name:"Encyclopédie entomo", desc:"Toutes espèces visibles", cost: 140, action:()=>{unlockedSpecies = species.length;}},
   {name:"Phéromones spéciales", desc:"+40% vitesse auto.", cost: 220, action:()=>{autoBonus *= 1.4;}},
   {name:"Lumière UV", desc:"+100% sur les papillons", cost: 350, action:()=>{habitats[3].rate = Math.round(habitats[3].rate*2);}},
-  {name:"Super fourmilière", desc:"+100% sur toutes les fourmis", cost: 1300, action:()=>{habitats[2].rate = Math.round(habitats[2].rate*2);}},
-  {name:"Colonie Royale", desc:"Débloque l'automatisation pour les espèces rares", cost: 3500, action:()=>{
-    for(let h=4; h<habitats.length; ++h) habitats[h].rate*=1.15;
+  {name:"Super fourmilière", desc:"+100% sur toutes les fourmis", cost: 1100, action:()=>{habitats[2].rate = Math.round(habitats[2].rate*2);}},
+  {name:"Colonie Royale", desc:"Débloque l'automatisation pour les espèces rares", cost: 3300, action:()=>{
+    for(let h=4; h<habitats.length; ++h) habitats[h].rate=Math.round(habitats[h].rate*1.17);
   }},
+  {name:"Accord Mantis", desc:"+50% production auto si Mante découverte", cost: 17000, action:()=>{autoBonus*=1.5;}},
+  {name:"Stéréo-Cigale", desc:"Les abeilles produisent +80% si Cigale débloquée", cost: 33000, action:()=>{habitats[1].rate = Math.round(habitats[1].rate*1.8);}},
+  {name:"Lueur Luciole", desc:"Super Click dure 10% plus longtemps", cost: 51000, action:()=>{}},
 ];
 
 const buffs = [
-  {name:"Clic chanceux", desc:"Prochain clic x5", duration:10, cost:50, species:0, effect:()=>{insectsPerClick*=5;}, undo:()=>{insectsPerClick=Math.max(1, insectsPerClick/5);}},
-  {name:"Ruche Turbo", desc:"Production auto x2 (20s)", duration:20, cost:100, species:1, effect:()=>{autoBonus*=2;}, undo:()=>{autoBonus/=2;}},
-  {name:"Colonie Express", desc:"Production auto x3 (10s)", duration:10, cost:220, species:2, effect:()=>{autoBonus*=3;}, undo:()=>{autoBonus/=3;}},
-  {name:"Pluie de pollen", desc:"Tous les clics x2 (15s)", duration:15, cost:340, species:3, effect:()=>{insectsPerClick*=2;}, undo:()=>{insectsPerClick=Math.max(1, insectsPerClick/2);}},
-  {name:"Pluie d’insectes", desc:"+500 insectes instantané", duration:0, cost:570, species:4, effect:()=>{insects+=500; showNotif("+500 insectes grâce à la libellule !");}, undo:()=>{}},
-  {name:"Scaraboost", desc:"+3 habitats aléatoires", duration:0, cost:1700, species:5, effect:()=>{
+  {name:"Clic chanceux", desc:"Prochain clic x5", duration:10, cost:55, species:0, effect:()=>{insectsPerClick*=5;}, undo:()=>{insectsPerClick=Math.max(1, insectsPerClick/5);}},
+  {name:"Ruche Turbo", desc:"Production auto x2 (20s)", duration:20, cost:130, species:1, effect:()=>{autoBonus*=2;}, undo:()=>{autoBonus/=2;}},
+  {name:"Colonie Express", desc:"Production auto x3 (10s)", duration:10, cost:260, species:2, effect:()=>{autoBonus*=3;}, undo:()=>{autoBonus/=3;}},
+  {name:"Pluie de pollen", desc:"Tous les clics x2 (15s)", duration:15, cost:410, species:3, effect:()=>{insectsPerClick*=2;}, undo:()=>{insectsPerClick=Math.max(1, insectsPerClick/2);}},
+  {name:"Pluie d’insectes", desc:"+700 insectes instantané", duration:0, cost:820, species:4, effect:()=>{insects+=700; showNotif("+700 insectes grâce à la libellule !");}, undo:()=>{}},
+  {name:"Scaraboost", desc:"+3 habitats aléatoires", duration:0, cost:2050, species:5, effect:()=>{
     let count=0;
     for(let t=0;t<3;++t){
       let idx = Math.floor(Math.random()*habitats.length);
@@ -65,10 +76,12 @@ const buffs = [
     }
     showNotif(`+${count} habitats grâce aux scarabées !`);
   }, undo:()=>{}},
-  {name:"Super Click", desc:"10s de clics x10", duration:10, cost:4100, species:6, effect:()=>{insectsPerClick*=10;}, undo:()=>{insectsPerClick=Math.max(1, insectsPerClick/10);}},
+  {name:"Super Click", desc:"10s de clics x10", duration:10, cost:6600, species:6, effect:()=>{insectsPerClick*=10;}, undo:()=>{insectsPerClick=Math.max(1, insectsPerClick/10);}},
+  {name:"Chant tonitruant", desc:"Abeilles produisent x2 (15s)", duration:15, cost:11000, species:7, effect:()=>{habitats[1].rate *=2;}, undo:()=>{habitats[1].rate = Math.round(habitats[1].rate/2);}},
+  {name:"Effet Prédatrice", desc:"+7000 insectes, prod auto x2 (12s)", duration:12, cost:22000, species:8, effect:()=>{insects+=7000; autoBonus*=2;}, undo:()=>{autoBonus/=2;}},
 ];
 
-// === NOTIF SYSTEM ===
+// NOTIF SYSTEM
 function showNotif(msg) {
   const zone = document.getElementById('notifZone');
   const el = document.createElement('div');
@@ -79,28 +92,32 @@ function showNotif(msg) {
   setTimeout(()=>el.remove(), 4100);
 }
 
-// === ROUTING ===
+// ROUTING
 function goto(route) {
   if (!routes[route]) return;
   currentRoute = route;
-  // Set active class on navbar
   document.querySelectorAll('.route-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelector(`[data-route="${route}"]`).classList.add('active');
-  // Render view
   routes[route]();
 }
 
-// === MAIN VIEW ===
+// MAIN VIEW
 function renderMain() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <h1>Insectarium Idle Deluxe</h1>
+    <h1>Insectarium Idle Evolution</h1>
+    <div class="adn-bar" id="adnBar">
+      <span style="font-size:1.18em;">🧬 ADN : <b id="adnCount">${adn}</b></span>
+      <button class="up-btn" style="margin-left:10px;padding:3px 12px 3px 12px;font-size:0.99em;"
+        id="mutationBtn" title="Réinitialise et gagne des bonus ADN">Mutation</button>
+      <span style="margin-left:12px;color:#668;">(x${(1+adn*0.12).toLocaleString(undefined,{maximumFractionDigits:2})} prod)</span>
+    </div>
     <div class="counters">
       <span>Insectes : <span id="insects">${Math.floor(insects)}</span></span>
       <span class="sep">|</span>
       <span>Auto/sec : <span id="ips">0</span></span>
       <span class="sep">|</span>
-      <span>Clic : <span id="ipc">${insectsPerClick}</span></span>
+      <span>Clic : <span id="ipc">${Math.floor(insectsPerClick * (1+adn*0.12))}</span></span>
     </div>
     <div id="insectZone" title="Clique sur la zone ou sur les insectes pour les attraper !"></div>
     <button class="big-btn" id="catchBtn">Attraper un insecte 🐞</button>
@@ -108,14 +125,14 @@ function renderMain() {
     <div id="habitatList"></div>
   `;
   renderHabitats();
-  updateUI();
   document.getElementById('catchBtn').onclick = ()=>{ collectInsect(); };
-  // Animation + clic zone
+  document.getElementById('mutationBtn').onclick = showMutationDialog;
   const insectZone = document.getElementById('insectZone');
   insectZone.onclick = function(e){
     if(e.target===insectZone) collectInsect();
   };
 }
+
 function renderHabitats() {
   let h = '';
   habitats.forEach((hab, i)=>{
@@ -129,7 +146,7 @@ function renderHabitats() {
   document.getElementById('habitatList').innerHTML = h;
 }
 
-// === ESPÈCES ===
+// ESPÈCES
 function renderSpecies() {
   const app = document.getElementById('app');
   let sp = `<h1>Espèces découvertes</h1><div class="species-list">`;
@@ -147,7 +164,7 @@ function renderSpecies() {
   app.innerHTML = sp;
 }
 
-// === UPGRADES ===
+// UPGRADES
 function renderUpgrades() {
   const app = document.getElementById('app');
   let u = `<h1>Améliorations</h1><div id="upgradeList">`;
@@ -162,10 +179,14 @@ function renderUpgrades() {
   app.innerHTML = u;
 }
 
-// === BUFFS & BONUS ===
+// BUFFS & ADN
 function renderBuffs() {
   const app = document.getElementById('app');
-  let bl = `<h1>Buffs & Bonus</h1>
+  let bl = `<h1>Buffs & ADN</h1>
+    <div style="margin-bottom:8px;font-size:1.04em;">
+      🧬 <b>ADN :</b> <span id="adnCount">${adn}</span> | Bonus permanent : <b>x${(1+adn*0.12).toLocaleString(undefined,{maximumFractionDigits:2})}</b>
+      <button class="up-btn" style="margin-left:15px;padding:3px 12px;" id="mutationBtnBuff">Mutation</button>
+    </div>
     <div id="buffList">`;
   for(let i=0; i<unlockedSpecies; ++i){
     const b = buffs.find(bu => bu.species===i);
@@ -181,34 +202,32 @@ function renderBuffs() {
   }
   bl += "</div><div style='margin-top:12px;font-size:0.97em;color:#556b2f;'>Chaque buff est lié à une espèce : découvre-les pour débloquer plus de bonus !</div>";
   app.innerHTML = bl;
+  document.getElementById('mutationBtnBuff').onclick = showMutationDialog;
 }
 
-// === À PROPOS ===
+// À PROPOS
 function renderAbout() {
   document.getElementById('app').innerHTML = `
     <h1>À propos</h1>
-    <p>Jeu créé avec ❤️ par ChatGPT & l'utilisateur. <br>
-    <b>Version évolutive – mai 2025</b>
+    <p>Jeu créé avec ❤️ par ChatGPT & l'utilisateur.<br>
+    <b>Version Evolution – mai 2025</b>
     <ul>
-      <li>Plus de 7 espèces, buffs, habitats rares</li>
-      <li>Sauvegarde automatique</li>
-      <li>Routing et évolutivité pour futures features</li>
-      <li>Animations, événements et notifications</li>
-      <li>Inspiré par Cookie Clicker, Egg Inc, AdVenture Capitalist, et l'amour des insectes</li>
+      <li>Prestige ADN, bonus évolutifs</li>
+      <li>Espèces, buffs, upgrades, habitats rares</li>
+      <li>Sauvegarde automatique, notifications, code modulaire</li>
     </ul>
-    <span style="color:#43a047;">En avant, explorateur d'insectarium !</span>
+    <span style="color:#43a047;">Bonne mutation !</span>
     </p>
-    <div style="margin:20px 0 0 0;font-size:0.95em;">Github, suggestions, améliorations : contacte ChatGPT !</div>
+    <div style="margin:20px 0 0 0;font-size:0.95em;">Repo Github : ajoute, modifie, partage !</div>
   `;
 }
 
-// === BUY / LOGIC ===
+// BUY / LOGIC
 window.buyHabitat = function(i){
   if(insects >= habitats[i].cost){
     insects -= habitats[i].cost;
     habitats[i].owned++;
-    habitats[i].cost = Math.round(habitats[i].cost*1.32+8);
-    // Découverte d'espèce
+    habitats[i].cost = Math.round(habitats[i].cost*1.28+12);
     if(!discovered[habitats[i].species]) {
       discovered[habitats[i].species]=true;
       if(unlockedSpecies<species.length) unlockedSpecies++;
@@ -259,16 +278,43 @@ window.activateBuff = function(i){
   saveGame();
 }
 
-// === COLLECT + ANIMATIONS ===
+// Mutation / ADN
+function showMutationDialog() {
+  const rareSpecies = Object.keys(discovered).map(i=>species[i]).filter(s=>s && s.rare).length;
+  const gain = Math.floor(Math.sqrt(insects/1200)) + rareSpecies;
+  if(gain<=0) {
+    showNotif("Accumule plus d'insectes pour muter !");
+    return;
+  }
+  if(confirm(
+    `Tu es sur le point de MUTER.\n\nTu obtiendras ${gain} 🧬 ADN (+${rareSpecies} pour espèces rares).\nCela va réinitialiser tous tes progrès insectes/habitats/upgrades, mais pas ton ADN ou ses bonus.\n\nContinuer ?`
+  )) {
+    performMutation(gain);
+  }
+}
+function performMutation(gain) {
+  insects = 0; insectsPerClick = 1; autoBonus = 1.0; unlockedSpecies = 1;
+  habitats.forEach((h,i)=>{ h.owned=0; h.cost=[15,60,210,1100,3800,16000,47000,140000,330000][i]; });
+  upgrades.forEach(u=>u.bought=false);
+  discovered = {0:true};
+  adn += gain;
+  totalMutations += 1;
+  showNotif(`Mutation réussie ! +${gain} 🧬 ADN`);
+  saveGame();
+  goto("main");
+  updateUI();
+}
+
+// COLLECT + ANIMATIONS
 function collectInsect(val){
-  val = val||insectsPerClick;
+  const adnBuff = 1 + adn * 0.12;
+  val = (val||insectsPerClick) * adnBuff;
   insects += val;
   updateUI();
-  animBurst(val);
+  animBurst(Math.floor(val));
   saveGame();
 }
 
-// -- Insect Animation --
 function spawnInsectAnim(){
   let pool=[];
   for(let i=0;i<unlockedSpecies;++i){
@@ -284,7 +330,6 @@ function spawnInsectAnim(){
   const insectZone = document.getElementById('insectZone');
   if(insectZone) {
     insectZone.appendChild(el);
-    // Animation
     let dx = -1 + 2*Math.random();
     let dy = -1 + 2*Math.random();
     let t = 0, maxT = 44+Math.random()*48;
@@ -301,10 +346,9 @@ function spawnInsectAnim(){
       requestAnimationFrame(anim);
     }
     anim();
-    // Clic sur l'insecte animé = bonus
     el.onclick = (e)=>{
       e.stopPropagation();
-      collectInsect(spec.baseRate*2); // Bonus!
+      collectInsect(spec.baseRate*2);
       el.style.transform="scale(1.33)";
       el.style.filter = "drop-shadow(0 2px 18px #90caf9aa)";
       setTimeout(()=>el.remove(),140);
@@ -331,54 +375,61 @@ function animBurst(val){
   anim();
 }
 
-// === BOUCLE PRINCIPALE ===
+// BOUCLE PRINCIPALE
 function updateUI() {
-  // Update main counters if on main
+  const adnBuff = 1 + adn * 0.12;
   if(currentRoute==="main"){
     document.getElementById('insects').textContent = Math.floor(insects);
     let ips = 0;
     habitats.forEach(hab=>{
       if(hab.owned) ips += hab.owned*hab.rate;
     });
-    ips = Math.round(ips * autoBonus);
+    ips = Math.round(ips * autoBonus * adnBuff);
     insectsPerSec = ips;
     document.getElementById('ips').textContent = insectsPerSec;
-    document.getElementById('ipc').textContent = insectsPerClick;
+    document.getElementById('ipc').textContent = Math.floor(insectsPerClick*adnBuff);
+    if(document.getElementById('adnCount')) document.getElementById('adnCount').textContent = adn;
     renderHabitats();
+  }
+  if(currentRoute==="buffs" && document.getElementById('adnCount')) {
+    document.getElementById('adnCount').textContent = adn;
   }
 }
 setInterval(()=>{
+  const adnBuff = 1 + adn * 0.12;
   insects += insectsPerSec/10;
   updateUI();
   saveGame();
-},100); // 0.1s tick
+},100);
 setInterval(()=>{
   if(currentRoute==="main") spawnInsectAnim();
-}, 1200);
+}, 1100);
 
-// === NAVBAR INIT + INIT RENDER ===
+// NAVBAR INIT + INIT RENDER
 document.querySelectorAll('.route-btn').forEach(btn => {
   btn.onclick = ()=>goto(btn.dataset.route);
 });
 goto("main");
 
-// === SAUVEGARDE AUTO ===
+// SAUVEGARDE AUTO
 function saveGame() {
   const state = {
-    insects, insectsPerClick, autoBonus, unlockedSpecies,
+    insects, insectsPerClick, autoBonus, unlockedSpecies, adn, totalMutations,
     habitats: habitats.map(h=>({owned:h.owned, cost:h.cost})),
     upgrades: upgrades.map(u=>!!u.bought)
   };
-  localStorage.setItem("insectIdleDeluxeSave", JSON.stringify(state));
+  localStorage.setItem("insectIdleEvolutionSave", JSON.stringify(state));
 }
 function loadGame() {
   try {
-    const s = JSON.parse(localStorage.getItem("insectIdleDeluxeSave"));
+    const s = JSON.parse(localStorage.getItem("insectIdleEvolutionSave"));
     if(!s) return;
     insects = s.insects||0;
     insectsPerClick = s.insectsPerClick||1;
     autoBonus = s.autoBonus||1.0;
     unlockedSpecies = s.unlockedSpecies||1;
+    adn = s.adn||0;
+    totalMutations = s.totalMutations||0;
     s.habitats && s.habitats.forEach((h,i)=>{
       if(habitats[i]){
         habitats[i].owned = h.owned||0;
