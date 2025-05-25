@@ -51,6 +51,16 @@ h1 {
   text-shadow: 0 1px 0 #d8fded;
 }
 
+.adn-bar {
+  background: linear-gradient(90deg, #e0f7fa, #ffe0b2 80%);
+  border-radius: 8px;
+  padding: 6px 13px 5px 13px;
+  margin-bottom: 7px;
+  color: #3e2723;
+  display: flex; align-items: center; gap: 13px;
+  box-shadow: 0 1.5px 9px #ffe08288;
+}
+
 .counters {
   font-size: 1.11em;
   margin-bottom: 10px;
@@ -232,7 +242,6 @@ h1 {
   100% {transform: translateY(0) scale(1);}
 }
 
-/* Responsive tweaks */
 @media (max-width: 600px) {
   .container {max-width:98vw; min-width:0; padding: 9vw 1vw 2vw 1vw;}
   #navbar {flex-wrap: wrap; gap: 4px; padding: 7px 2vw;}
