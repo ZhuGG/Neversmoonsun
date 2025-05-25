@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Insectarium Idle</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e8f5e9 60%, #bbdefb 100%);
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      color: #253423;
+    }
+    .container {
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 4px 22px #2232;
+      padding: 28px 32px 18px 32px;
+      max-width: 430px;
+      min-width: 320px;
+    }
+    h1 {
+      color: #2e7d32;
+      margin-bottom: 12px;
+      text-shadow: 0 1px 0 #d8fded;
+      letter-spacing: 2px;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+    }
+    .counters {
+      font-size: 1.1em;
+      margin-bottom: 15px;
+      color: #344c1e;
+    }
+    .big-btn {
+      background: linear-gradient(90deg, #fbc02d, #ffeb3b 90%);
+      color: #344c1e;
+      padding: 13px 34px;
+      font-size: 1.4em;
+      border-radius: 18px;
+      border: none;
+      box-shadow: 0 2px 6px #8884;
+      margin: 14px 0 20px 0;
+      cursor: pointer;
+      font-weight: bold;
+      transition: transform 0.08s;
+    }
+    .big-btn:active {
+      transform: scale(0.97);
+    }
+    .upgrades, .habitats {
+      margin-top: 10px;
+      background: #f6ffec;
+      border-radius: 11px;
+      padding: 12px 13px;
+    }
+    .up-btn {
+      display: block;
+      margin: 10px 0;
+      width: 100%;
+      background: #b3e5fc;
+      color: #2c387e;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background 0.2s;
+      box-shadow: 0 1px 5px #aaa3;
+      text-align: left;
+    }
+    .up-btn:disabled { background: #e3e3e3; color: #9a9a9a;}
+    .section-title {
+      font-weight: bold; color: #263238; margin-top: 7px; margin-bottom: 3px; letter-spacing: 1px;
+    }
+    #insectZone {
+      position: relative;
+      background: linear-gradient(90deg, #f9fbe7 75%, #b3e5fc 100%);
+      border-radius: 15px;
+      height: 160px;
+      margin: 18px 0 18px 0;
+      overflow: hidden;
+      box-shadow: 0 0 0 #0000, 0 2px 12px #bbdefb55;
+      border: 1.5px solid #dceee6;
+      user-select: none;
+      cursor: pointer;
+    }
+    .insect {
+      position: absolute;
+      width: 42px; height: 42px;
+      transition: transform 0.15s;
+      pointer-events: all;
+      cursor: pointer;
+      opacity: 0.93;
+      filter: drop-shadow(0 1.5px 5px #8882);
+      z-index: 2;
+      animation: wiggle 2.2s infinite alternate ease-in-out;
+    }
+    @keyframes wiggle {
+      0% {transform: translateY(0px);}
+      100% {transform: translateY(7px);}
+    }
+    .species-bar {
+      margin: 6px 0 2px 0; font-size: 1em; color: #44711f;
+    }
+    .species-icon {
+      display: inline-block;
+      margin-right: 8px; font-size: 1.4em;
+      vertical-align: middle;
+      filter: drop-shadow(0 1.5px 5px #6662);
+    }
+    .footer { margin: 18px 0 3px 0; color: #809688; font-size: 0.93em;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Insectarium Idle</h1>
+    <div class="counters">
+      Insectes collectés : <span id="insects">0</span><br>
+      /sec (automatique) : <span id="ips">0</span>
+    </div>
+    <div id="insectZone" title="Clique ou attends pour collecter des insectes !"></div>
+    <button class="big-btn" id="catchBtn">Attraper un insecte 🐞</button>
+    <div class="section-title">Habitats et Automatisations</div>
+    <div class="habitats" id="habitatList"></div>
+    <div class="section-title">Améliorations</div>
+    <div class="upgrades" id="upgradeList"></div>
+    <div class="section-title">Espèces découvertes</div>
+    <div id="speciesList"></div>
+    <div class="footer">By ChatGPT, 2025 • <span style="color:#43a047;">Inspire-toi de la nature !</span></div>
+  </div>
+  <script>
+    // -- CORE DATA --
+    let insects = 0;
+    let insectsPerClick = 1;
+    let insectsPerSec = 0;
+    let discovered = {0: true};
+    let unlockedSpecies = 1; // How many species revealed in UI
+
+    // --- Species DATA ---
+    const species = [
+      {name: "Coccinelle", emoji: "🐞", color: "#e53935", desc: "Petite et bénéfique.", chance: 0.72, baseRate: 1},
+      {name: "Abeille", emoji: "🐝", color: "#ffd600", desc: "Pollinisatrice infatigable.", chance: 0.13, baseRate: 4},
+      {name: "Fourmi", emoji: "🐜", color: "#43a047", desc: "Travailleuse acharnée.", chance: 0.07, baseRate: 7},
+      {name: "Papillon", emoji: "🦋", color: "#3f51b5", desc: "Éphémère et élégant.", chance: 0.05, baseRate: 15},
+      {name: "Libellule", emoji: "🦗", color: "#00bcd4", desc: "Rapide et agile.", chance: 0.02, baseRate: 33}
+    ];
+    // -- Habitats/Automation: each auto-increment per sec
+    const habitats = [
+      {name:"Terrarium à Coccinelles", rate: 1, cost: 15, species:0, owned:0},
+      {name:"Ruche modeste", rate: 4, cost: 60, species:1, owned:0},
+      {name:"Fourmilière", rate: 12, cost: 200, species:2, owned:0},
+      {name:"Jardin à papillons", rate: 32, cost: 1000, species:3, owned:0},
+      {name:"Étang à libellules", rate: 80, cost: 3300, species:4, owned:0}
+    ];
+    // -- Upgrades
+    const upgrades = [
+      {name:"Loupe de collectionneur", desc:"+1 insecte/clic", cost: 25, action:()=>{insectsPerClick+=1;}},
+      {name:"Filet rapide", desc:"Double le gain par clic", cost: 90, action:()=>{insectsPerClick*=2;}},
+      {name:"Encyclopédie entomo", desc:"Débloque toutes les espèces (visibles)", cost: 140, action:()=>{unlockedSpecies = species.length;}},
+      {name:"Phéromones spéciales", desc:"+40% vitesse auto.", cost: 220, action:()=>{autoBonus *= 1.4;}},
+      {name:"Lumière UV", desc:"+100% sur tous les papillons", cost: 350, action:()=>{habitats[3].rate = Math.round(habitats[3].rate*2);}},
+    ];
+
+    let autoBonus = 1.0;
+
+    // --- UI Functions ---
+    function updateUI(){
+      document.getElementById('insects').textContent = Math.floor(insects);
+      // Habitats
+      let h = '';
+      habitats.forEach((hab, i)=>{
+        if(unlockedSpecies > hab.species){
+          h += `<button class="up-btn" onclick="buyHabitat(${i})" ${insects<hab.cost?'disabled':''}>
+                  ${hab.name} <b>(${hab.owned})</b> — +${hab.rate}/sec — <b>${hab.cost} 🐛</b><br>
+                  <span style="color:#888;font-size:0.93em;">${species[hab.species].emoji} ${species[hab.species].name}</span>
+                </button>`;
+        }
+      });
+      document.getElementById('habitatList').innerHTML = h;
+      // Upgrades
+      let u = '';
+      upgrades.forEach((upg,i)=>{
+        if(!upg.bought)
+          u += `<button class="up-btn" onclick="buyUpgrade(${i})" ${insects<upg.cost?'disabled':''}>
+                  <b>${upg.name}</b> — ${upg.desc} <span style="float:right;">${upg.cost} 🐛</span>
+                </button>`;
+      });
+      document.getElementById('upgradeList').innerHTML = u;
+      // Species bar
+      let sp = '';
+      for(let i=0; i<unlockedSpecies; ++i){
+        sp += `<span class="species-bar">
+          <span class="species-icon" style="color:${species[i].color};">${species[i].emoji}</span>
+          ${species[i].name}
+        </span>`;
+      }
+      document.getElementById('speciesList').innerHTML = sp;
+      // Auto/sec
+      insectsPerSec = 0;
+      habitats.forEach(hab=>{
+        if(hab.owned) insectsPerSec += hab.owned*hab.rate;
+      });
+      insectsPerSec = Math.round(insectsPerSec * autoBonus);
+      document.getElementById('ips').textContent = insectsPerSec;
+    }
+
+    // -- Logic: Buy habitat
+    window.buyHabitat = function(i){
+      if(insects >= habitats[i].cost){
+        insects -= habitats[i].cost;
+        habitats[i].owned++;
+        habitats[i].cost = Math.round(habitats[i].cost*1.37+5);
+        // Discover species if new
+        if(!discovered[habitats[i].species]) {
+          discovered[habitats[i].species]=true;
+          if(unlockedSpecies<species.length) unlockedSpecies++;
+        }
+        updateUI();
+      }
+    }
+    // -- Logic: Buy upgrade
+    window.buyUpgrade = function(i){
+      if(insects >= upgrades[i].cost && !upgrades[i].bought){
+        insects -= upgrades[i].cost;
+        upgrades[i].bought = true;
+        upgrades[i].action();
+        updateUI();
+      }
+    }
+
+    // -- Collect via click
+    document.getElementById('catchBtn').onclick = ()=>{ collectInsect(); };
+
+    // -- Insect Animation + Click on Insect Zone
+    const insectZone = document.getElementById('insectZone');
+    function spawnInsectAnim(){
+      // Randomly pick discovered species (weighted)
+      let pool=[];
+      for(let i=0;i<unlockedSpecies;++i){
+        for(let k=0; k<Math.floor(species[i].chance*100);++k) pool.push(i);
+      }
+      let idx = pool[Math.floor(Math.random()*pool.length)]||0;
+      const spec = species[idx];
+      const el = document.createElement('div');
+      el.className = 'insect';
+      el.style.left = (15+Math.random()*320)+'px';
+      el.style.top = (12+Math.random()*90)+'px';
+      el.innerHTML = `<span style="font-size:2em;">${spec.emoji}</span>`;
+      insectZone.appendChild(el);
+
+      // Animation: wiggle + slide
+      let dx = -1 + 2*Math.random();
+      let dy = -1 + 2*Math.random();
+      let t = 0, maxT = 60+Math.random()*50;
+      function anim(){
+        t++;
+        let posX = parseFloat(el.style.left);
+        let posY = parseFloat(el.style.top);
+        el.style.left = (Math.max(0, Math.min(330,posX+dx*2)))+"px";
+        el.style.top = (Math.max(0, Math.min(110,posY+dy*1.5)))+"px";
+        if(t>maxT){
+          el.remove();
+          return;
+        }
+        requestAnimationFrame(anim);
+      }
+      anim();
+
+      // Click sur l'insecte animé = bonus
+      el.onclick = (e)=>{
+        e.stopPropagation();
+        collectInsect(spec.baseRate*2); // Bonus!
+        el.style.transform="scale(1.33)";
+        setTimeout(()=>el.remove(),150);
+      };
+    }
+    function collectInsect(val){
+      val = val||insectsPerClick;
+      insects += val;
+      updateUI();
+      animBurst(val);
+    }
+    insectZone.onclick = function(e){
+      if(e.target===insectZone) collectInsect();
+    }
+    // -- Animation Burst
+    function animBurst(val){
+      const burst = document.createElement('span');
+      burst.textContent = "+"+val;
+      burst.style.position='absolute';
+      burst.style.left = (150+Math.random()*70)+'px';
+      burst.style.top = (65+Math.random()*35)+'px';
+      burst.style.color = "#43a047";
+      burst.style.fontWeight='bold';
+      burst.style.fontSize='1.15em';
+      burst.style.opacity=1;
+      burst.style.pointerEvents="none";
+      insectZone.appendChild(burst);
+      let t=0;
+      let anim = ()=> {
+        t++;
+        burst.style.top = (parseFloat(burst.style.top)-1.1)+'px';
+        burst.style.opacity = 1-t/25;
+        if(t<23) requestAnimationFrame(anim);
+        else burst.remove();
+      };
+      anim();
+    }
+
+    // -- Main Game Loop (auto income, spawns, unlock)
+    setInterval(()=>{
+      insects += insectsPerSec/10;
+      updateUI();
+    },100); // 0.1s tick
+
+    setInterval(()=>{
+      spawnInsectAnim();
+    }, 1450);
+
+    // -- Start UI
+    updateUI();
+  </script>
+</body>
+</html>
