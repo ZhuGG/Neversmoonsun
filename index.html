@@ -3,21 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Roue Soleil/Lune — Nevers (PNG assets + rotation fix)</title>
+<title>Roue Soleil/Lune — Nevers (layers + modal + style)</title>
 <style>
 :root{
   --ink:#f6f8ff; --muted:#b9c6dd; --stroke:rgba(255,255,255,.16);
   --glass:rgba(255,255,255,.10); --glass2:rgba(255,255,255,.05);
-  --bg1:#0a0f1d; --bg2:#0b1429;
+  --bg1:#0a0f1d; --bg2:#0b1429; --violet:#8b7cff; --violetDeep:#6b5bff;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;color:var(--ink);font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,Inter,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2) 55%,var(--bg1));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-/* Backdrops en PNG (plein écran) */
+
+/* Backdrops (remplacés par tes PNG) */
 body::before{content:"";position:fixed;inset:0;z-index:-3;opacity:.96;pointer-events:none;background-image:url("assets/bg_sun.png");background-size:cover;background-position:center;transition:opacity .6s ease}
 body[data-mode="moon"]::before{background-image:url("assets/bg_moon.png")}
-/* Rays doux (léger, CSS only) */
-body::after{content:"";position:fixed;inset:-10% -10% auto -10%;height:70%;z-index:-2;pointer-events:none;opacity:.32;filter:blur(10px);background:conic-gradient(from 0deg, rgba(255,211,107,.18) 0 20%, rgba(247,184,217,.16) 20% 38%, rgba(198,226,255,.16) 38% 70%, rgba(207,244,243,.16) 70% 100%);mask:radial-gradient(closest-side at 50% 30%,#000 40%,transparent 70%);animation:rays 40s linear infinite}
+
+/* Rays doux */
+body::after{content:"";position:fixed;inset:-10% -10% auto -10%;height:70%;z-index:-2;pointer-events:none;opacity:.28;filter:blur(10px);background:conic-gradient(from 0deg, rgba(255,211,107,.18) 0 20%, rgba(247,184,217,.16) 20% 38%, rgba(198,226,255,.16) 38% 70%, rgba(207,244,243,.16) 70% 100%);mask:radial-gradient(closest-side at 50% 30%,#000 40%,transparent 70%);animation:rays 40s linear infinite}
 @keyframes rays{to{transform:rotate(360deg)}}
 
 .app{min-height:100dvh;padding:16px;display:flex;flex-direction:column;gap:12px;padding-bottom:22dvh}
@@ -30,35 +32,38 @@ body::after{content:"";position:fixed;inset:-10% -10% auto -10%;height:70%;z-ind
 /* STAGE */
 .stage{position:relative;width:min(92vw,560px);margin:4px auto 0;aspect-ratio:1/1}
 .ringGlow{position:absolute;inset:-12px;border-radius:999px;z-index:0;filter: blur(22px) saturate(130%);opacity:.55;transition:filter .3s ease}
-/* Aura animé pendant le spin (léger) */
 .aura{position:absolute;inset:-4%;border-radius:999px;z-index:0;pointer-events:none;opacity:0}
 .stage.spinning .aura{opacity:.9;animation:auraPulse 1200ms cubic-bezier(.2,.7,0,1) forwards}
 @keyframes auraPulse{0%{box-shadow:0 0 0 0 rgba(255,230,180,.35),0 0 0 0 rgba(160,200,255,.28)}100%{box-shadow:0 0 60px 30px rgba(255,230,180,.0),0 0 60px 30px rgba(160,200,255,.0)}}
 
-.pointer{position:absolute;top:-2px;left:50%;translate:-50% 0;z-index:5;width:38px;height:38px;background: radial-gradient(circle at 60% 40%, #fff, #f1f6ff 40%, #c9d8ff 60%, #91a8ff 100%);-webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;filter: drop-shadow(0 8px 16px rgba(0,0,0,.6))}
+/* VIOLET pointer visible */
+.pointer{position:absolute;top:-3px;left:50%;translate:-50% 0;z-index:6;width:40px;height:40px;background: radial-gradient(circle at 60% 40%, var(--violet), var(--violetDeep));-webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;filter: drop-shadow(0 8px 16px rgba(0,0,0,.6))}
 
-/* Wheel wrapper : on ROTATES THIS (canvas + skin ensemble) */
+/* Wheel : on rotate le WRAP (canvas segments + skin + labels) */
 #wheelWrap{position:relative;width:100%;height:100%;will-change:transform;transition: transform 3.1s cubic-bezier(.12,.6,0,1)}
-#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;background:transparent}
-#wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;filter:drop-shadow(0 24px 48px rgba(0,0,0,.45))}
+#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;background:transparent;z-index:1}
+#wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;filter:drop-shadow(0 24px 48px rgba(0,0,0,.45));z-index:2}
+/* Nouveau calque au-dessus du skin pour que les libellés/dom restent visibles même si le PNG est opaque */
+#wheelLabels{position:absolute;inset:0;z-index:3;pointer-events:none}
 
-/* Hub bouton (compact + DA adaptée) */
-.hub{position:absolute;top:50%;left:50%;translate:-50% -50%;width:32%;aspect-ratio:1/1;border-radius:999px;background: radial-gradient(150% 150% at 30% 20%, rgba(255,255,255,.55), rgba(255,255,255,.08) 40%, transparent 65%), conic-gradient(from 0deg, #fff0c2 0 35%, #ffd08a 35% 50%, #b7caff 50% 82%, #aee0ff 82% 100%);border:1px solid rgba(255,255,255,.35);box-shadow: inset 0 1px 8px rgba(255,255,255,.6), 0 10px 30px rgba(0,0,0,.45);display:grid;place-items:center}
-.spin{appearance:none;border:none;cursor:pointer;border-radius:999px;padding:12px 16px;font-weight:900;letter-spacing:.3px;color:#0c1120;background: linear-gradient(145deg, #fff6d6, #ffe3a7 40%, #cfe6ff 75%, #bfefff);box-shadow: 0 12px 22px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.8);transition: transform .18s ease}
-.spin:active{transform:scale(.98)}
+/* Hub bouton — disque + icône SVG */
+.hub{position:absolute;top:50%;left:50%;translate:-50% -50%;width:31%;aspect-ratio:1/1;border-radius:999px;background: radial-gradient(150% 150% at 30% 20%, rgba(255,255,255,.55), rgba(255,255,255,.08) 40%, transparent 65%), conic-gradient(from 0deg, #fff0c2 0 35%, #ffd08a 35% 50%, #b7caff 50% 82%, #aee0ff 82% 100%);border:1px solid rgba(255,255,255,.35);box-shadow: inset 0 1px 8px rgba(255,255,255,.6), 0 10px 30px rgba(0,0,0,.45);display:grid;place-items:center;z-index:4}
+.spin{appearance:none;border:none;cursor:pointer;border-radius:999px;width:68%;aspect-ratio:1/1;display:grid;place-items:center;background: radial-gradient(circle at 50% 35%, #ffffff, #f7f7ff 60%, #dfe7ff);box-shadow: 0 12px 22px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.8);transition: transform .18s ease}
+.spin:active{transform:scale(.97)}
+.spin svg{width:44%;height:44%;}
 
-/* RESULT */
-.footer{position:fixed;left:12px;right:12px;bottom:12px}
-.card{border-radius:18px;padding:14px;backdrop-filter: blur(14px);background: linear-gradient(160deg, var(--glass), var(--glass2));border:1px solid var(--stroke);box-shadow: 0 12px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.22)}
-.result{display:grid;gap:6px;opacity:0;transform:translateY(8px);}
-.result.show{animation:pop .32s cubic-bezier(.2,.7,0,1) forwards}
-@keyframes pop{to{opacity:1;transform:none}}
-.actions{display:flex;gap:8px;margin-top:6px}
-.btn{flex:1;padding:12px;border-radius:12px;text-align:center;font-weight:900;color:#0b0f1f;text-decoration:none;border:0;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.6)}
-.btn.go{background: linear-gradient(145deg,#cfe6ff,#9bc9ff)}
-.btn.re{background: linear-gradient(145deg,#ffe3a7,#ffbd7c)}
-.small{font-size:12px;color:var(--muted)}
-.sep{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent)}
+/* RESULT MODAL */
+.modal{position:fixed;inset:0;display:none;align-items:flex-end;justify-content:center}
+.modal.show{display:flex}
+.backdrop{position:absolute;inset:0;background:rgba(6,10,20,.45);backdrop-filter: blur(4px);}
+.sheet{position:relative;width:min(720px,92vw);margin:0 auto 12px;border-radius:20px;padding:16px;background:linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.sheet h3{margin:0 0 6px;font-size:18px}
+.sheet p{margin:0 0 10px;color:var(--muted)}
+.sheet .actions{display:flex;gap:8px}
+.sheet .btn{flex:1;padding:12px;border-radius:12px;text-align:center;font-weight:900;color:#0b0f1f;text-decoration:none;border:0;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.6)}
+.sheet .go{background: linear-gradient(145deg,#cfe6ff,#9bc9ff)}
+.sheet .close{background: linear-gradient(145deg,#ffe3a7,#ffbd7c)}
+.close-x{position:absolute;top:10px;right:10px;border:0;background:transparent;color:#fff;font-size:22px;opacity:.8;cursor:pointer}
 
 @media (prefers-reduced-motion: reduce){ #wheelWrap{transition:none!important} .spin{transition:none!important} body::after{animation:none!important} }
 </style>
@@ -80,19 +85,28 @@ body::after{content:"";position:fixed;inset:-10% -10% auto -10%;height:70%;z-ind
     <div id="wheelWrap">
       <canvas id="wheelCanvas" aria-label="Roue de sélection"></canvas>
       <img id="wheelSkin" alt="skin de la roue" src="assets/wheel_sun.png" />
+      <canvas id="wheelLabels"></canvas>
     </div>
-    <div class="hub"><button id="spin" class="spin" aria-label="Tourner">Tourner</button></div>
+    <div class="hub"><button id="spin" class="spin" aria-label="Tourner" title="Tourner">
+      <!-- arrows svg -->
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0b0f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-9-9"/>
+        <path d="M21 3v7h-7"/>
+      </svg>
+    </button></div>
   </div>
+</div>
 
-  <div class="footer card">
-    <div id="result" class="result">
-      <div id="title" style="font-weight:900"></div>
-      <div id="desc" class="small"></div>
-      <div class="sep"></div>
-      <div class="actions">
-        <a id="go" class="btn go" target="_blank" rel="noopener">Itinéraire</a>
-        <button id="respins" class="btn re">Relancer</button>
-      </div>
+<!-- Modal résultat (popup) -->
+<div id="modal" class="modal" aria-modal="true" role="dialog" hidden>
+  <div class="backdrop" id="backdrop"></div>
+  <div class="sheet">
+    <button class="close-x" id="closex" aria-label="Fermer">×</button>
+    <h3 id="mTitle"></h3>
+    <p id="mDesc"></p>
+    <div class="actions">
+      <a id="mGo" class="btn go">Itinéraire</a>
+      <button id="mClose" class="btn close">Fermer</button>
     </div>
   </div>
 </div>
@@ -101,10 +115,10 @@ body::after{content:"";position:fixed;inset:-10% -10% auto -10%;height:70%;z-ind
 <canvas id="celest" style="position:fixed;inset:0;pointer-events:none"></canvas>
 
 <script>
-/* ========= ASSETS (prépare dans /assets) =========
-- bg_sun.png / bg_moon.png     → 1440×3120 (portrait @2x), fond plein écran
-- wheel_sun.png / wheel_moon.png → 1024×1024 (carré @2x), transparent, cercle centré
-================================================== */
+/* ========= ASSETS =========
+- bg_sun.png / bg_moon.png     → 1440×3120
+- wheel_sun.png / wheel_moon.png → 1024×1024, transparent
+============================ */
 
 /* ===================== Données (sets) ===================== */
 const SUN = [
@@ -142,17 +156,13 @@ const app=document.getElementById('app'); app.dataset.mode='sun';
 const stage=document.getElementById('stage');
 const wheelWrap=document.getElementById('wheelWrap');
 const wheel=document.getElementById('wheelCanvas');
+const labelsCvs=document.getElementById('wheelLabels');
 const skin=document.getElementById('wheelSkin');
 const ctx=wheel.getContext('2d');
-const resBox=document.getElementById('result');
-const titleEl=document.getElementById('title');
-const descEl=document.getElementById('desc');
-const goBtn=document.getElementById('go');
+const lctx=labelsCvs.getContext('2d');
 const spinBtn=document.getElementById('spin');
-const reBtn=document.getElementById('respins');
-const tabSun=document.getElementById('tabSun');
-const tabMoon=document.getElementById('tabMoon');
-const ringGlow=document.getElementById('ringGlow');
+const tabSun=document.getElementById('tabSun'); const tabMoon=document.getElementById('tabMoon'); const ringGlow=document.getElementById('ringGlow');
+const modal=document.getElementById('modal'); const mTitle=document.getElementById('mTitle'); const mDesc=document.getElementById('mDesc'); const mGo=document.getElementById('mGo'); const mClose=document.getElementById('mClose'); const closex=document.getElementById('closex'); const backdrop=document.getElementById('backdrop');
 const cel=document.getElementById('celest'); const c2=cel.getContext('2d');
 
 let size, baseDeg=0, spinning=false, sunImg=null, moonImg=null;
@@ -163,7 +173,7 @@ async function ensureSkins(){ if(!sunImg) sunImg=await loadImage('assets/wheel_s
 
 /* ===================== Rendu roue ===================== */
 function drawWheel(){
-  const w=wheel.clientWidth, dpr=devicePixelRatio||1; wheel.width=w*dpr; wheel.height=w*dpr; size=wheel.width; const r=size/2, cx=r, cy=r; ctx.clearRect(0,0,size,size); ctx.save(); ctx.translate(cx,cy);
+  const w=wheel.clientWidth, dpr=devicePixelRatio||1; wheel.width=w*dpr; wheel.height=w*dpr; labelsCvs.width=w*dpr; labelsCvs.height=w*dpr; size=wheel.width; const r=size/2, cx=r, cy=r; ctx.clearRect(0,0,size,size); lctx.clearRect(0,0,size,size); ctx.save(); ctx.translate(cx,cy); lctx.save(); lctx.translate(cx,cy);
   const paletteSun=['#FFE6B3','#FFD3A3','#FFC6C6','#F7B8D9','#E6C7FF','#CFE2FF','#CFF4F3','#E1F7E9'];
   const paletteMoon=['#B3D9FF','#C0E7FF','#C9F1FF','#CFEAF6','#E1E0FF','#D9C8FF','#F0D6FF','#FFD9F0'];
   const palette=(mode==='sun')?paletteSun:paletteMoon;
@@ -173,37 +183,31 @@ function drawWheel(){
     const g=ctx.createLinearGradient(0,0, Math.cos(mid)*r, Math.sin(mid)*r); g.addColorStop(0,col); g.addColorStop(1,shade(col,-10));
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r-22,start,end); ctx.closePath(); ctx.fillStyle=g; ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=2*dpr; ctx.beginPath(); ctx.arc(0,0,r-22,end,end); ctx.stroke();
-    const lx=Math.cos(mid)*(r*0.62), ly=Math.sin(mid)*(r*0.62); ctx.save(); ctx.translate(lx,ly); ctx.rotate(mid); ctx.fillStyle='#0c1326'; ctx.font=`${14*dpr}px ui-sans-serif,system-ui`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(currentSet[i].label,0,0); ctx.restore();
+    // labels sur canvas supérieur (au-dessus du skin)
+    const lx=Math.cos(mid)*(r*0.62), ly=Math.sin(mid)*(r*0.62); lctx.save(); lctx.translate(lx,ly); lctx.rotate(mid); lctx.fillStyle='#0c1326'; lctx.font=`${14*dpr}px ui-sans-serif,system-ui`; lctx.textAlign='center'; lctx.textBaseline='middle'; lctx.fillText(currentSet[i].label,0,0); lctx.restore();
   }
   ctx.beginPath(); ctx.arc(0,0,r*0.42,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.12)'; ctx.fill();
-  ctx.restore();
+  ctx.restore(); lctx.restore();
 }
 function shade(hex,amt){ const col=hex.replace('#',''); const num=parseInt(col,16); let r=(num>>16)+amt,g=((num>>8)&0xFF)+amt,b=(num&0xFF)+amt; r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b)); return '#'+(r<<16|g<<8|b).toString(16).padStart(6,'0').toUpperCase(); }
 
-/* ===================== Spin (rotation du WRAP) ===================== */
-spinBtn.addEventListener('click', spin); reBtn.addEventListener('click', spin);
-function spin(){
-  if(spinning) return; const n=currentSet.length; if(!n) return; spinning=true; resBox.classList.remove('show');
-  const idx=(Math.random()*n)|0; const slice=360/n; const sliceCenter=idx*slice+slice/2; const turns=5; const targetDeg=baseDeg+turns*360+(360-sliceCenter)+(Math.random()*2-1);
-  stage.classList.add('spinning');
-  wheelWrap.style.transform=`rotate(${targetDeg}deg)`;
-  const onEnd=()=>{ wheelWrap.removeEventListener('transitionend', onEnd); baseDeg=targetDeg%360; showResult(currentSet[idx]); burst(); stage.classList.remove('spinning'); spinning=false; };
-  wheelWrap.addEventListener('transitionend', onEnd);
-}
-function showResult(a){ titleEl.textContent=a.title; descEl.textContent=a.desc; goBtn.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; resBox.classList.add('show'); }
+/* ===================== Spin ===================== */
+spinBtn.addEventListener('click', spin);
+function spin(){ if(spinning) return; const n=currentSet.length; if(!n) return; spinning=true; hideModal(); const idx=(Math.random()*n)|0; const slice=360/n; const sliceCenter=idx*slice+slice/2; const turns=5; const targetDeg=baseDeg+turns*360+(360-sliceCenter)+(Math.random()*2-1); stage.classList.add('spinning'); wheelWrap.style.transform=`rotate(${targetDeg}deg)`; const onEnd=()=>{ wheelWrap.removeEventListener('transitionend', onEnd); baseDeg=targetDeg%360; showModal(currentSet[idx]); burst(); stage.classList.remove('spinning'); spinning=false; }; wheelWrap.addEventListener('transitionend', onEnd); }
 
-/* ===================== Tabs / mode switch ===================== */
+/* ===================== Tabs ===================== */
 async function setMode(m){ if(mode===m) return; mode=m; document.body.dataset.mode=m; tabSun.setAttribute('aria-pressed', m==='sun'); tabMoon.setAttribute('aria-pressed', m==='moon'); pool=m==='sun'?[...SUN]:[...MOON]; currentSet=sampleSet(pool); wheelWrap.style.transition='none'; wheelWrap.style.transform='rotate(0deg)'; baseDeg=0; await ensureSkins(); skin.src=m==='sun'?'assets/wheel_sun.png':'assets/wheel_moon.png'; requestAnimationFrame(()=>{ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.1s cubic-bezier(.12,.6,0,1)'; drawWheel(); }); ringGlow.style.background = m==='sun' ? 'conic-gradient(from 0deg, rgba(255,211,107,.28) 0 20%, rgba(247,184,217,.26) 20% 40%, rgba(198,226,255,.24) 40% 70%, rgba(207,244,243,.22) 70% 100%)' : 'conic-gradient(from 0deg, rgba(179,217,255,.28) 0 25%, rgba(201,241,255,.26) 25% 55%, rgba(225,224,255,.22) 55% 80%, rgba(255,217,240,.22) 80% 100%)'; }
 
 document.getElementById('tabSun').addEventListener('click', ()=> setMode('sun'));
 document.getElementById('tabMoon').addEventListener('click', ()=> setMode('moon'));
 
-/* ===================== Particules (célestes) ===================== */
-function burst(){
-  const W=cel.width=innerWidth*(devicePixelRatio||1), H=cel.height=innerHeight*(devicePixelRatio||1), cx=W/2, cy=H/3, N=46, parts=[], isSun=(mode==='sun');
-  for(let i=0;i<N;i++){ parts.push({x:cx,y:cy,vx:(Math.random()-.5)*0.9*(devicePixelRatio||1),vy:(Math.random()*.7+.35)*(devicePixelRatio||1),r:(isSun?6:5)*(devicePixelRatio||1),life:50+Math.random()*30,col1:isSun?'#fff3d6':'#eaf6ff',col2:isSun?'#ffd36b':'#b3d9ff'}); }
-  let f=0;(function step(){ c2.clearRect(0,0,W,H); parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy*=1.02; p.life--; c2.save(); c2.translate(p.x,p.y); const g=c2.createRadialGradient(0,0,0,0,0,p.r); g.addColorStop(0,p.col1); g.addColorStop(.35,p.col2); g.addColorStop(1,'rgba(255,255,255,0)'); c2.fillStyle=g; c2.beginPath(); c2.arc(0,0,p.r,0,Math.PI*2); c2.fill(); c2.restore(); }); if((f+=1)<60) requestAnimationFrame(step); else c2.clearRect(0,0,W,H); })();
-}
+/* ===================== Modal ===================== */
+function showModal(a){ mTitle.textContent=a.title; mDesc.textContent=a.desc; mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; modal.hidden=false; modal.classList.add('show'); }
+function hideModal(){ modal.classList.remove('show'); modal.hidden=true; }
+[backdrop,mClose,closex].forEach(el=> el.addEventListener('click', hideModal));
+
+/* ===================== Particules ===================== */
+function burst(){ const W=cel.width=innerWidth*(devicePixelRatio||1), H=cel.height=innerHeight*(devicePixelRatio||1), cx=W/2, cy=H/3, N=46, parts=[], isSun=(mode==='sun'); for(let i=0;i<N;i++){ parts.push({x:cx,y:cy,vx:(Math.random()-.5)*0.9*(devicePixelRatio||1),vy:(Math.random()*.7+.35)*(devicePixelRatio||1),r:(isSun?6:5)*(devicePixelRatio||1),life:50+Math.random()*30,col1:isSun?'#fff3d6':'#eae9ff',col2:isSun?'#ffd36b':'#8b7cff'}); } let f=0;(function step(){ c2.clearRect(0,0,W,H); parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy*=1.02; p.life--; c2.save(); c2.translate(p.x,p.y); const g=c2.createRadialGradient(0,0,0,0,0,p.r); g.addColorStop(0,p.col1); g.addColorStop(.35,p.col2); g.addColorStop(1,'rgba(255,255,255,0)'); c2.fillStyle=g; c2.beginPath(); c2.arc(0,0,p.r,0,Math.PI*2); c2.fill(); c2.restore(); }); if((f+=1)<60) requestAnimationFrame(step); else c2.clearRect(0,0,W,H); })(); }
 
 /* ===================== Init ===================== */
 (async function init(){ await ensureSkins(); drawWheel(); })();
