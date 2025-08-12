@@ -23,11 +23,11 @@ body[data-mode="moon"]::before{background-image:url("assets/bg_moon.png")}
 .pointer{position:absolute;top:-3px;left:50%;translate:-50% 0;z-index:6;width:40px;height:40px;background: radial-gradient(circle at 60% 40%, var(--violet), var(--violetDeep));-webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;filter: drop-shadow(0 8px 16px rgba(0,0,0,.6))}
 
 /* ROTATION du WRAP */
-#wheelWrap{position:relative;width:100%;height:100%;transform-origin:50% 50%;will-change:transform;transition: transform 3.1s cubic-bezier(.12,.6,0,1)}
+#wheelWrap{position:relative;width:100%;height:100%;transform-origin:50% 50%;will-change:transform;transition: transform 3.1s cubic-bezier(.12,.6,0,1);isolation:isolate}
 /* calques */
-#wheelCanvas,#wheelLabels{position:absolute;inset:0;border-radius:50%;background:transparent}
-#wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;z-index:1;opacity:.9}
-#wheelCanvas{z-index:3}
+#wheelCanvas,#wheelLabels{position:absolute;inset:0;border-radius:50%;background:transparent;z-index:2;pointer-events:none;-webkit-mask-image:radial-gradient(circle at 50% 50%,#000 49.5%,transparent 50%);mask-image:radial-gradient(circle at 50% 50%,#000 49.5%,transparent 50%) }
+#wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;z-index:0;opacity:.9}
+#wheelCanvas{position:absolute;inset:0;border-radius:50%;background:transparent;z-index:1}
 #wheelLabels{z-index:4;pointer-events:none;-webkit-mask-image:radial-gradient(circle at 50% 50%,#000 49.5%,transparent 50%);mask-image:radial-gradient(circle at 50% 50%,#000 49.5%,transparent 50%)}
 
 /* Hub bouton — plus petit */
@@ -39,7 +39,7 @@ body[data-mode="moon"]::before{background-image:url("assets/bg_moon.png")}
 .modal{position:fixed;inset:0;display:none;place-items:center;z-index:4000}
 .modal.show{display:grid}
 .backdrop{position:absolute;inset:0;background:rgba(6,10,20,.45);backdrop-filter: blur(8px);z-index:0}
-.sheet{position:relative;z-index:1;width:min(620px,92vw);border-radius:22px;padding:18px 16px 16px;background:radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,.08) 55%), linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2);animation:pop .28s ease forwards;opacity:0;transform:translateY(10px)}
+.sheet{position:relative;z-index:10;width:min(620px,92vw);border-radius:22px;padding:18px 16px 16px;background:radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,.08) 55%), linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2);animation:pop .28s ease forwards;opacity:0;transform:translateY(10px)}
 .sheet:before{content:"";position:absolute;left:50%;top:-10px;translate:-50% 0;width:94px;height:12px;border-radius:999px;background:linear-gradient(90deg,#ffe8b8,#b9c9ff)}
 @keyframes pop{to{opacity:1;transform:none}}
 .sheet h3{margin:0 0 6px;font-size:18px}
@@ -107,20 +107,20 @@ function shuffle(a){a=[...a]; for(let i=a.length-1;i>0;i--){const j=(Math.random
 
 function sizeCanvases(){ const rct=wheel.getBoundingClientRect(); const w=Math.max(1,rct.width), h=Math.max(1,rct.height), dpr=Math.max(1,devicePixelRatio||1); wheel.width=w*dpr; wheel.height=h*dpr; wheel.style.width=w+'px'; wheel.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); labelsCvs.width=w*dpr; labelsCvs.height=h*dpr; labelsCvs.style.width=w+'px'; labelsCvs.style.height=h+'px'; lctx.setTransform(dpr,0,0,dpr,0,0); }
 
-function drawWheel(){ sizeCanvases(); const rct=wheel.getBoundingClientRect(); const w=rct.width,h=rct.height; const r=Math.min(w,h)/2, cx=w/2, cy=h/2; ctx.clearRect(0,0,w,h); lctx.clearRect(0,0,w,h); ctx.save(); ctx.translate(cx,cy); lctx.save(); lctx.translate(cx,cy);
+function drawWheel(){ sizeCanvases(); const rct=wheel.getBoundingClientRect(); const w=rct.width,h=rct.height; const r=Math.min(w,h)/2, cx=w/2, cy=h/2; const outer=r-4; const inner=r-12; ctx.clearRect(0,0,w,h); lctx.clearRect(0,0,w,h); ctx.save(); ctx.translate(cx,cy); lctx.save(); lctx.translate(cx,cy);
   // contour
-  ctx.beginPath(); ctx.arc(0,0,r-8,0,Math.PI*2); ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=18; ctx.stroke();
+  ctx.beginPath(); ctx.arc(0,0,outer,0,Math.PI*2); ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=18; ctx.stroke();
   // palettes
   const palSun=['#FFE6B3','#FFD3A3','#FFC6C6','#F7B8D9','#E6C7FF','#CFE2FF','#CFF4F3','#E1F7E9'];
   const palMoon=['#B3D9FF','#C0E7FF','#C9F1FF','#CFEAF6','#E1E0FF','#D9C8FF','#F0D6FF','#FFD9F0'];
   const pal=(mode==='sun')?palSun:palMoon; const n=currentSet.length, seg=2*Math.PI/n;
   // clip segments dans le disque (au-dessus du skin grâce au z-index)
   ctx.save(); ctx.beginPath(); ctx.arc(0,0,r-2,0,Math.PI*2); ctx.clip();
-  for(let i=0;i<n;i++){ const start=i*seg, end=start+seg, mid=(start+end)/2, col=pal[i%pal.length]; const g=ctx.createLinearGradient(0,0, Math.cos(mid)*r, Math.sin(mid)*r); g.addColorStop(0,col); g.addColorStop(1,darken(col,10)); ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r-22,start,end); ctx.closePath(); ctx.fillStyle=g; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,r-22,end,end); ctx.stroke(); }
+  for(let i=0;i<n;i++){ const start=i*seg, end=start+seg, mid=(start+end)/2, col=pal[i%pal.length]; const g=ctx.createLinearGradient(0,0, Math.cos(mid)*r, Math.sin(mid)*r); g.addColorStop(0,col); g.addColorStop(1,darken(col,10)); ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,inner,start,end); ctx.closePath(); ctx.fillStyle=g; ctx.fill(); ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,inner,end,end); ctx.stroke(); }
   ctx.restore();
   // labels — clip + halo, tangent
-  lctx.save(); lctx.beginPath(); lctx.arc(0,0,r-24,0,Math.PI*2); lctx.clip();
-  for(let i=0;i<n;i++){ const mid=(i*seg+(i+1)*seg)/2; const col=pal[i%pal.length]; const lx=Math.cos(mid)*(r*0.62), ly=Math.sin(mid)*(r*0.62); lctx.save(); lctx.translate(lx,ly); lctx.rotate(mid); lctx.font='16px ui-sans-serif,system-ui'; lctx.textAlign='center'; lctx.textBaseline='middle'; lctx.lineWidth=4; lctx.strokeStyle='rgba(0,0,0,.25)'; lctx.strokeText(currentSet[i].label,0,0); lctx.fillStyle=darken(col,55); lctx.fillText(currentSet[i].label,0,0); lctx.restore(); }
+  lctx.save(); lctx.beginPath(); lctx.arc(0,0,inner-2,0,Math.PI*2); lctx.clip();
+  for(let i=0;i<n;i++){ const mid=(i*seg+(i+1)*seg)/2; const col=pal[i%pal.length]; const lx=Math.cos(mid)*(inner*0.78), ly=Math.sin(mid)*(inner*0.78); lctx.save(); lctx.translate(lx,ly); lctx.rotate(mid); lctx.font='16px ui-sans-serif,system-ui'; lctx.textAlign='center'; lctx.textBaseline='middle'; lctx.lineWidth=4; lctx.strokeStyle='rgba(0,0,0,.25)'; lctx.strokeText(currentSet[i].label,0,0); lctx.fillStyle=darken(col,55); lctx.fillText(currentSet[i].label,0,0); lctx.restore(); }
   lctx.restore(); ctx.restore(); lctx.restore(); }
 
 function darken(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)-amt,g=((n>>8)&255)-amt,b=(n&255)-amt; r=Math.max(0,r); g=Math.max(0,g); b=Math.max(0,b); return '#'+(r<<16|g<<8|b).toString(16).padStart(6,'0').toUpperCase(); }
