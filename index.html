@@ -3,29 +3,28 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Roue Soleil/Lune – Nevers</title>
+<title>Roue Soleil/Lune — Reset</title>
 <style>
   :root{
-    --ink:#eef1f7; --muted:#b9c2d6;
-    --bg:#0b0f1a;
-    --haloSun1:#FFCF7A; --haloSun2:#FF9F6C;
+    --ink:#eef1f7; --muted:#b9c2d6; --stroke:rgba(255,255,255,.22);
+    --haloSun1:#FFD07A; --haloSun2:#FF9F6C;
     --haloMoon1:#9CC8FF; --haloMoon2:#A38CFF;
-    --pointer:#6f4aff; /* violet bien visible */
-    --card: rgba(255,255,255,.10); --stroke: rgba(255,255,255,.20);
+    --violet:#6f4aff;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  html,body{overscroll-behavior:none;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,system-ui,Arial}
-  body.modal-open{position:fixed;left:0;right:0;width:100%} /* scroll-lock */
+  html,body{height:100%; overscroll-behavior:none}
+  body{margin:0; color:var(--ink); font:16px/1.4 -apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,system-ui,Arial; background:#0b0f1a}
+  body.modal-open{position:fixed; left:0; right:0; width:100%} /* scroll-lock */
 
-  /* --- Layers / Stage --- */
-  .stage{position:relative; min-height:100dvh; display:flex; flex-direction:column; gap:12px; padding:12px 12px 22dvh; touch-action:none}
+  /* ===== Layers ===== */
   .bg{position:fixed; inset:0; z-index:-3; background:#0b0f1a center/cover no-repeat}
   .bg.sun{background-image:url(assets/bg_sun.png)}
   .bg.moon{background-image:url(assets/bg_moon.png)}
-  .particles{position:fixed; inset:0; z-index:-1; pointer-events:none} /* derrière la roue, au-dessus du bg */
+  .particles{position:fixed; inset:0; z-index:-1; pointer-events:none} /* derrière la roue */
 
-  /* Header / Tabs */
+  .stage{position:relative; min-height:100dvh; padding:12px 12px 22dvh; display:flex; flex-direction:column; gap:12px; touch-action:none}
+
+  /* Tabs */
   .tabs{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:8px}
   .tab{padding:9px 16px; border-radius:999px; backdrop-filter: blur(12px);
        background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08));
@@ -33,72 +32,44 @@
   .tab.off{color:#e6ebff; opacity:.65}
 
   /* Wheel */
-  .wheel-wrap{
-    position:relative; width:min(92vw,560px); aspect-ratio:1/1; margin:70px auto 0;
-    z-index:2; /* au-dessus des particules */
-    transform:translateZ(0);
-  }
-  .wheel-rotor{ /* on anime CE conteneur */
-    position:absolute; inset:0; transform:rotate(0deg); will-change:transform;
-  }
-  .wheel-canvas{position:absolute; inset:0}
-  .wheel-mask{position:absolute; inset:0; border-radius:50%; overflow:hidden; pointer-events:none}
-  .wheel-skin{position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:.9} /* optionnel */
-  .wheel-border{
-    position:absolute; inset:-4%; border-radius:50%;
-    background:
-      radial-gradient(circle at 50% 40%, rgba(255,255,255,.15), transparent 62%),
-      radial-gradient(circle at 50% 50%, rgba(0,0,0,.6), transparent 68%);
-    box-shadow: inset 0 0 0 7px rgba(0,0,0,.55);
-    pointer-events:none;
-  }
-  .halo{ /* anneau lumineux au-dessus des segments */
-    position:absolute; inset:-6%; border-radius:50%;
+  .wheel-wrap{position:relative; width:min(92vw,560px); aspect-ratio:1/1; margin:70px auto 0; z-index:2; overflow:hidden}
+  .wheel-border{position:absolute; inset:-2%; border-radius:50%; pointer-events:none;
+    box-shadow: inset 0 0 0 8px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.15);}
+  .halo{position:absolute; inset:-6%; border-radius:50%; pointer-events:none; z-index:3;
     filter:blur(16px) saturate(120%); opacity:.62; mix-blend-mode:screen;
-    mask: radial-gradient(circle at 50% 50%, transparent 54%, #000 56%, #000);
-    animation: spinHalo 18s linear infinite;
-    pointer-events:none; z-index:3;
-  }
+    mask: radial-gradient(circle at 50% 50%, transparent 54%, #000 56%, #000); animation:spinHalo 18s linear infinite}
   .halo.sun{background:conic-gradient(from 0deg, var(--haloSun1), var(--haloSun2), var(--haloSun1))}
   .halo.moon{background:conic-gradient(from 0deg, var(--haloMoon1), var(--haloMoon2), var(--haloMoon1))}
   @keyframes spinHalo{to{transform:rotate(360deg)}}
 
-  .pointer{
-    position:absolute; top:-6px; left:50%; transform:translate(-50%,0);
-    width:24px; height:38px; z-index:5; pointer-events:none;
-    background: radial-gradient(circle at 50% 60%, #8c76ff, #6f4aff 60%, #5130df 100%);
+  /* rotor = seul élément qui tourne */
+  .rotor{position:absolute; inset:0; transform:rotate(0deg); will-change:transform}
+  .wheel-canvas{position:absolute; inset:0; z-index:2}
+  .wheel-skin{position:absolute; inset:0; border-radius:50%; pointer-events:none; z-index:2; opacity:.9; display:none} /* active si tu as un PNG skin */
+
+  .pointer{position:absolute; top:-6px; left:50%; transform:translate(-50%,0); z-index:5; width:24px; height:38px; pointer-events:none;
+    background: radial-gradient(circle at 50% 60%, #8c76ff, var(--violet) 60%, #5130df 100%);
     -webkit-clip-path: path("M12 0 C18 8 18 30 12 38 C6 30 6 8 12 0 Z");
             clip-path: path("M12 0 C18 8 18 30 12 38 C6 30 6 8 12 0 Z");
     filter: drop-shadow(0 8px 10px rgba(0,0,0,.5));
   }
-  .hub{
-    position:absolute; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:26%; aspect-ratio:1/1; border-radius:50%; z-index:6;
-    display:grid; place-items:center; cursor:pointer;
-    background:
-      radial-gradient(circle at 50% 40%, rgba(255,255,255,.8), rgba(255,255,255,.55) 55%, rgba(255,255,255,.2) 70%, rgba(255,255,255,.05) 100%),
-      linear-gradient(145deg, rgba(255,255,255,.65), rgba(255,255,255,.25));
-    box-shadow: 0 16px 40px rgba(0,0,0,.45), inset 0 2px 8px rgba(255,255,255,.85);
-  }
+  .hub{position:absolute; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:26%; aspect-ratio:1/1; border-radius:50%; z-index:6; display:grid; place-items:center; cursor:pointer;
+    background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,.55) 55%, rgba(255,255,255,.18) 75%);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45), inset 0 2px 8px rgba(255,255,255,.85);}
   .hub:active{scale:.98}
-  .hub::after{ /* petit disque central */
-    content:""; width:62%; aspect-ratio:1/1; border-radius:50%;
+  .hub::after{content:""; width:62%; aspect-ratio:1/1; border-radius:50%;
     background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.95), rgba(255,255,255,.6));
-    box-shadow: inset 0 1px 2px rgba(0,0,0,.12);
-  }
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.12);}
 
   /* Modal */
   .modal{display:none}
   .modal.is-open{display:block}
   .modal__backdrop{position:fixed; inset:0; background:rgba(10,12,20,.4); backdrop-filter: blur(6px); z-index:4000}
-  .modal__sheet{
-    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.98);
-    width:min(92vw,640px); border-radius:18px; padding:14px;
-    background:linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
-    border:1px solid rgba(255,255,255,.25);
-    box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
-    display:grid; gap:10px; z-index:4001; opacity:0; transition:.25s;
-  }
+  .modal__sheet{position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.98);
+    width:min(92vw,640px); border-radius:18px; padding:14px; background:linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
+    border:1px solid rgba(255,255,255,.25); box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
+    display:grid; gap:10px; z-index:4001; opacity:0; transition:.25s; padding-bottom:calc(14px + env(safe-area-inset-bottom))}
   .modal.is-open .modal__sheet{opacity:1; transform:translate(-50%,-50%) scale(1)}
   .row{display:flex; align-items:center; gap:10px; justify-content:space-between}
   .pill{padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.12); font-weight:700}
@@ -108,39 +79,29 @@
        box-shadow:0 8px 22px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.7)}
   .go{background:linear-gradient(145deg,#cfe3ff,#9ec7ff)}
   .close{background:linear-gradient(145deg,#ffe1a8,#ffc07a)}
-
-  /* A11y reduced motion */
-  @media (prefers-reduced-motion:reduce){
-    .halo{animation:none}
-    .wheel-rotor{transition:none!important}
-  }
 </style>
 </head>
 <body>
-  <!-- Backgrounds -->
+  <!-- Fonds -->
   <div id="bg" class="bg sun" aria-hidden="true"></div>
-  <!-- Particles canvases -->
+  <!-- Particules -->
   <canvas id="pSun" class="particles" aria-hidden="true"></canvas>
   <canvas id="pMoon" class="particles" aria-hidden="true" style="display:none"></canvas>
 
   <div class="stage" id="stage">
     <!-- Tabs -->
-    <div class="tabs" role="tablist" aria-label="Mode">
-      <button id="tabSun" class="tab" role="tab" aria-selected="true">Soleil</button>
-      <button id="tabMoon" class="tab off" role="tab" aria-selected="false">Lune</button>
+    <div class="tabs" role="tablist">
+      <button id="tabSun"  class="tab"      aria-selected="true">Soleil</button>
+      <button id="tabMoon" class="tab off"  aria-selected="false">Lune</button>
     </div>
 
-    <!-- Wheel -->
-    <div class="wheel-wrap" id="wheelWrap" aria-live="polite">
+    <!-- Roue -->
+    <div class="wheel-wrap" id="wheelWrap">
       <div class="wheel-border" aria-hidden="true"></div>
-
-      <!-- halo -->
       <div id="halo" class="halo sun" aria-hidden="true"></div>
 
-      <div id="rotor" class="wheel-rotor">
-        <div class="wheel-mask"><!-- mask ensures nothing déborde --></div>
+      <div id="rotor" class="rotor">
         <canvas id="wheel" class="wheel-canvas" aria-label="Roue"></canvas>
-        <!-- Optionnel : skin décoratif par-dessus les segments -->
         <!-- <img src="assets/wheel_skin.png" class="wheel-skin" alt="" aria-hidden="true"> -->
       </div>
 
@@ -154,7 +115,7 @@
     <div class="modal__backdrop"></div>
     <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
       <div class="row">
-        <div style="font-weight:900; font-size:20px" id="mTitle">Titre activité</div>
+        <div style="font-weight:900; font-size:20px" id="mTitle">Titre</div>
         <div style="display:flex; align-items:center; gap:8px">
           <div id="mBadge" class="pill">Soleil</div>
           <button class="x" id="mClose" aria-label="Fermer">×</button>
@@ -170,351 +131,174 @@
   </div>
 
 <script>
-/* ===================== DATA ===================== */
+/* ==== DATA ==== */
 const DATA = {
   sun: [
-    {label:"VieuxPort", title:"Îlots et passerelles du Vieux-Port", dur:"1 h", meta:"Nature", desc:"Mini‑îles sauvages, herbes hautes, vue sur Nevers. Parfait en fin d’aprem.", maps:"Port de la Jonction Nevers"},
-    {label:"Kiosque", title:"Sieste musicale — parc Salengro", dur:"45 min", meta:"Chill", desc:"Herbe fraîche + livre. Ombre et eau à proximité.", maps:"Parc Roger-Salengro Nevers"},
-    {label:"Vitraux", title:"Vitraux contemporains", dur:"40 min", meta:"Frais", desc:"Dans la cathédrale : colorimétrie moderne, faisceaux lumineux au sol.", maps:"Cathédrale Saint-Cyr-et-Sainte-Julitte Nevers"},
-    {label:"Panorama", title:"Belvédère du Bec d’Allier", dur:"1 h 15", meta:"Nature", desc:"Confluent Loire‑Allier. Grand air, oiseaux, horizon magnifique.", maps:"Bec d'Allier panorama"},
-    {label:"Boutiques", title:"Vieilles boutiques de faïence", dur:"40 min", meta:"Patrimoine", desc:"Repérage d’enseignes historiques et vitrines anciennes.", maps:"Rue du 14 Juillet Nevers"},
-    {label:"Faïence", title:"Atelier express — faïence", dur:"1 h", meta:"Créatif", desc:"Customise une petite pièce dans un atelier du centre.", maps:"Place Carnot Nevers"},
-    {label:"Belvédères", title:"Remparts + Tour Goguin (sunset)", dur:"1 h", meta:"Photo", desc:"Balade douce jusqu’au coucher de soleil sur la Loire.", maps:"Quai des Mariniers Nevers"},
-    {label:"Polaroid", title:"Polaroid challenge", dur:"45 min", meta:"Créatif", desc:"3 spots → 3 clichés. Souvenir unique.", maps:"Place Carnot Nevers"}
+    {label:"VieuxPort", title:"Îlots & passerelles du Vieux-Port", dur:"1 h",   meta:"Nature",   desc:"Mini-îles sauvages, herbes hautes, vue sur Nevers. Parfait en fin d’aprèm.", maps:"Port de la Jonction Nevers"},
+    {label:"Kiosque",    title:"Sieste musicale — Parc Salengro",  dur:"45 min", meta:"Chill",    desc:"Herbe fraîche + livre. Ombre et eau à proximité.", maps:"Parc Roger-Salengro Nevers"},
+    {label:"Vitraux",    title:"Vitraux contemporains",            dur:"40 min", meta:"Frais",    desc:"Dans la cathédrale : colorimétrie moderne, faisceaux lumineux au sol.", maps:"Cathédrale de Nevers"},
+    {label:"Panorama",   title:"Belvédère du Bec d’Allier",        dur:"1 h 15", meta:"Nature",   desc:"Confluent Loire-Allier. Grand air, oiseaux, horizon magnifique.", maps:"Bec d'Allier panorama"},
+    {label:"Boutiques",  title:"Vieilles boutiques de faïence",    dur:"40 min", meta:"Patrimoine",desc:"Repérage d’enseignes historiques et vitrines anciennes.", maps:"Rue du 14 Juillet Nevers"},
+    {label:"Faïence",    title:"Atelier express — faïence",        dur:"1 h",    meta:"Créatif",  desc:"Customise une petite pièce dans un atelier du centre.", maps:"Place Carnot Nevers"},
+    {label:"Belvédères", title:"Remparts + Tour Goguin (sunset)",  dur:"1 h",    meta:"Photo",    desc:"Balade douce jusqu’au coucher de soleil sur la Loire.", maps:"Quai des Mariniers Nevers"},
+    {label:"Polaroid",   title:"Polaroid challenge",               dur:"45 min", meta:"Créatif",  desc:"3 spots → 3 clichés. Souvenir unique.", maps:"Place Carnot Nevers"}
   ],
   moon: [
-    {label:"Nocturne", title:"Fil Bleu — secrets", dur:"45 min", meta:"Urbain", desc:"Version détails cachés du parcours nocturne en ville.", maps:"Palais ducal de Nevers"},
-    {label:"Cinéma", title:"Séance Art & Essai", dur:"2 h", meta:"Frais", desc:"Film indé en VO si possible. Salle climatisée.", maps:"Cinéma à Nevers"},
-    {label:"Cave", title:"Cave/bistrot de poche", dur:"1 h", meta:"Soirée", desc:"Un verre intimiste dans une micro‑adresse locale.", maps:"bar à vin centre Nevers"},
-    {label:"StreetArt", title:"Street‑art discret", dur:"45 min", meta:"Underground", desc:"Pochoirs, collages et fresques de poche.", maps:"Place Carnot Nevers"},
-    {label:"Glyphe", title:"Glyphe mystère", dur:"30 min", meta:"Curiosité", desc:"Petite chasse à un symbole gravé dans la pierre.", maps:"Centre historique Nevers"},
-    {label:"Fresque", title:"Fresque XXL cachée", dur:"30 min", meta:"Photo", desc:"Repère une grande fresque discrète en nocturne.", maps:"Centre ancien Nevers"},
-    {label:"Étoiles", title:"Observatoire improvisé", dur:"40 min", meta:"Ciel clair", desc:"Regarde les constellations depuis un point sombre en bord de Loire.", maps:"Bec d'Allier panorama"}
+    {label:"Nocturne", title:"Fil Bleu — secrets",     dur:"45 min", meta:"Urbain",    desc:"Version détails cachés du parcours nocturne en ville.", maps:"Palais ducal de Nevers"},
+    {label:"Cinéma",   title:"Séance Art & Essai",     dur:"2 h",    meta:"Frais",     desc:"Film indé en VO si possible. Salle climatisée.", maps:"Cinéma à Nevers"},
+    {label:"Cave",     title:"Cave/bistrot de poche",  dur:"1 h",    meta:"Soirée",    desc:"Un verre intimiste dans une micro-adresse locale.", maps:"bar à vin centre Nevers"},
+    {label:"StreetArt",title:"Street-art discret",     dur:"45 min", meta:"Underground",desc:"Pochoirs, collages et fresques de poche.", maps:"Place Carnot Nevers"},
+    {label:"Glyphe",   title:"Glyphe mystère",         dur:"30 min", meta:"Curiosité", desc:"Petite chasse à un symbole gravé dans la pierre.", maps:"Centre historique Nevers"},
+    {label:"Fresque",  title:"Fresque XXL cachée",     dur:"30 min", meta:"Photo",     desc:"Repère une grande fresque discrète en nocturne.", maps:"Centre ancien Nevers"},
+    {label:"Étoiles",  title:"Observatoire improvisé", dur:"40 min", meta:"Ciel clair", desc:"Regarde les constellations depuis un point sombre en bord de Loire.", maps:"Bec d'Allier panorama"}
   ]
 };
 
-/* ===================== STATE ===================== */
-let mode = 'sun'; // 'sun' | 'moon'
-let items = [...DATA[mode]];
-let angle = 0; // angle courant (rad)
-let spinning = false;
-let savedScrollY = 0;
+/* ==== STATE ==== */
+let mode='sun', items=[...DATA.sun], angle=0, spinning=false, savedScrollY=0;
 
-/* ===================== ELEMENTS ===================== */
-const bg = document.getElementById('bg');
-const tabSun = document.getElementById('tabSun');
-const tabMoon = document.getElementById('tabMoon');
+/* ==== ELTS ==== */
+const bg = $('#bg'), tabSun = $('#tabSun'), tabMoon = $('#tabMoon');
+const rotor = $('#rotor'), wheel = $('#wheel'), halo = $('#halo'), hub = $('#hub');
+const modal = $('#modal'), mTitle=$('#mTitle'), mMeta=$('#mMeta'), mDesc=$('#mDesc'), mGo=$('#mGo'), mBadge=$('#mBadge'), mClose=$('#mClose'), mExit=$('#mExit');
+const pSun = $('#pSun'), pMoon = $('#pMoon');
 
-const rotor = document.getElementById('rotor');
-const wheel = document.getElementById('wheel');
-const halo = document.getElementById('halo');
-const hub = document.getElementById('hub');
+/* ==== UTILS ==== */
+function $(s){return document.querySelector(s)}
+function DPR(){ return Math.min(2, Math.round((devicePixelRatio||1)*100)/100); }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
 
-const modal = document.getElementById('modal');
-const mTitle = document.getElementById('mTitle');
-const mMeta  = document.getElementById('mMeta');
-const mDesc  = document.getElementById('mDesc');
-const mGo    = document.getElementById('mGo');
-const mBadge = document.getElementById('mBadge');
-const mClose = document.getElementById('mClose');
-const mExit  = document.getElementById('mExit');
+/* ==== SIZE & DRAW ==== */
+function paletteSun(i){ const hues=[35,18,340,310,200,160,90,55]; const h=hues[i%hues.length]; return `hsla(${h},70%,75%,0.78)`;}
+function paletteMoon(i){ const hues=[210,230,255,275,295,175,195]; const h=hues[i%hues.length]; return `hsla(${h},55%,72%,0.78)`;}
+function textColorFor(hsla){ const m=hsla.match(/hsla?\\((\\d+),\\s*([\\d.]+)%?,\\s*([\\d.]+)%?/i); if(!m) return '#1b2033'; const L=parseFloat(m[3]); return (L>60)?'#1b2033':'#f8fbff'; }
 
-const pSun = document.getElementById('pSun');
-const pMoon = document.getElementById('pMoon');
-
-/* ===================== GEOMETRY & DRAW ===================== */
-let DPR = Math.min(2, Math.round(window.devicePixelRatio || 1));
-function resizeWheel(){
-  const rect = wheel.getBoundingClientRect();
-  wheel.width  = Math.floor(rect.width  * DPR);
-  wheel.height = Math.floor(rect.height * DPR);
+function sizeWheel(){
+  const rect=wheel.getBoundingClientRect();
+  const dpr=DPR(); wheel.width=Math.floor(rect.width*dpr); wheel.height=Math.floor(rect.height*dpr);
   drawWheel();
 }
-window.addEventListener('resize', resizeWheel);
-window.addEventListener('orientationchange', ()=>setTimeout(resizeWheel, 150));
+window.addEventListener('resize', sizeWheel);
+window.addEventListener('orientationchange', ()=>setTimeout(sizeWheel,150));
 
-function pastelPaletteSun(i,n){
-  // teintes douces soleil (jaunes/roses/verts)
-  const hues = [35, 18, 340, 310, 200, 160, 90, 55];
-  const h = hues[i%hues.length];
-  return `hsla(${h}, 70%, 75%, 0.78)`; // translucide : 0.78
-}
-function pastelPaletteMoon(i,n){
-  // teintes douces lune (bleus/violacés)
-  const hues = [210, 230, 255, 275, 295, 175, 195];
-  const h = hues[i%hues.length];
-  return `hsla(${h}, 55%, 72%, 0.78)`;
-}
-function textColorFor(hslString){
-  // simple luminance proxy : si L% > 60 => sombre; sinon clair
-  const m = hslString.match(/hsla?\((\d+),\s*([\d.]+)%?,\s*([\d.]+)%?/i);
-  if(!m) return '#1b2033';
-  const L = parseFloat(m[3]);
-  return (L>60) ? '#1b2033' : '#f8fbff';
-}
 function drawWheel(){
-  const ctx = wheel.getContext('2d');
-  const W = wheel.width, H = wheel.height, r = Math.min(W,H)/2;
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.clearRect(0,0,W,H);
+  // purge toute trace d’anciens labels DOM potentiels
+  document.querySelectorAll('.segLabel,.label,.wheel-label').forEach(n=>n.remove());
 
-  ctx.save();
-  ctx.translate(W/2, H/2);
-  // border inside (clair)
+  const ctx=wheel.getContext('2d'); const W=wheel.width, H=wheel.height; const r=Math.min(W,H)/2;
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.translate(W/2,H/2);
+
+  // bord clair intérieur
   ctx.beginPath(); ctx.arc(0,0,r*0.98,0,Math.PI*2);
-  ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = Math.max(2, r*0.02);
-  ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=Math.max(2,r*0.02); ctx.stroke();
 
-  const active = items;
-  const n = active.length;
-  const seg = (Math.PI*2)/n;
-
+  const n=items.length, seg=(Math.PI*2)/n;
   for(let i=0;i<n;i++){
-    const start = i*seg, end = start+seg;
-    // fill
-    const col = (mode==='sun')? pastelPaletteSun(i,n) : pastelPaletteMoon(i,n);
-    ctx.beginPath(); ctx.moveTo(0,0);
-    ctx.arc(0,0,r*0.86, start, end); ctx.closePath();
-    ctx.fillStyle = col; ctx.fill();
+    const start=i*seg, end=start+seg, mid=start+seg/2;
+    const col=(mode==='sun')?paletteSun(i):paletteMoon(i);
 
-    // separator
-    ctx.beginPath();
-    ctx.arc(0,0,r*0.86, end, end);
-    ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = Math.max(1, r*0.008);
-    ctx.stroke();
+    // segment translucide
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r*0.86,start,end); ctx.closePath();
+    ctx.fillStyle=col; ctx.fill();
 
-    // label
-    const mid = start + seg/2;
-    const lx = Math.cos(mid) * r*0.58;
-    const ly = Math.sin(mid) * r*0.58;
-    ctx.save();
-    ctx.translate(lx, ly);
-    ctx.rotate(mid);
-    const txt = active[i].label;
-    // pill bg
-    const padX = 14*DPR, padY = 8*DPR;
-    ctx.font = `${14*DPR}px Inter, system-ui, -apple-system`;
-    const tw = ctx.measureText(txt).width;
-    const pw = tw + padX*2, ph = 30*DPR;
-    // halo doux au lieu d'un stroke
-    ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 8*DPR; ctx.shadowOffsetY = 2*DPR;
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
-    roundRect(ctx, -pw/2, -ph/2, pw, ph, 999); ctx.fill();
-    ctx.shadowColor = 'transparent';
-    ctx.fillStyle = textColorFor(col);
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(txt, 0, 1*DPR);
+    // séparateur
+    ctx.beginPath(); ctx.arc(0,0,r*0.86,end,end);
+    ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=Math.max(1, r*0.008); ctx.stroke();
+
+    // label sur pastille
+    const lx=Math.cos(mid)*r*0.58, ly=Math.sin(mid)*r*0.58;
+    ctx.save(); ctx.translate(lx,ly); ctx.rotate(mid);
+    const txt=items[i].label; const dpr=DPR();
+    ctx.font = `${14*dpr}px Inter, system-ui, -apple-system`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw=ctx.measureText(txt).width; const padX=14*dpr, padY=8*dpr; const pw=tw+padX*2, ph=30*dpr;
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8*dpr; ctx.shadowOffsetY=2*dpr;
+    ctx.fillStyle='rgba(255,255,255,.94)'; roundRect(ctx,-pw/2,-ph/2,pw,ph,999); ctx.fill();
+    ctx.shadowColor='transparent';
+    ctx.fillStyle=textColorFor(col); ctx.fillText(txt,0,1*dpr);
     ctx.restore();
   }
   ctx.restore();
 }
-function roundRect(ctx,x,y,w,h,r){
-  const rr=Math.min(r,w/2,h/2);
-  ctx.beginPath();
-  ctx.moveTo(x+rr,y);
-  ctx.arcTo(x+w,y,x+w,y+h,rr);
-  ctx.arcTo(x+w,y+h,x,y+h,rr);
-  ctx.arcTo(x,y+h,x,y,rr);
-  ctx.arcTo(x,y,x+w,y,rr);
-  ctx.closePath();
+function roundRect(ctx,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();}
+
+/* ==== PARTICLES (ambiance) ==== */
+function startParticles(){
+  setupParticles(pSun,true);
+  setupParticles(pMoon,false);
 }
-
-/* ===================== SPIN / DRAG ===================== */
-function spinRandom(){
-  if(spinning) return;
-  spinning = true;
-  const n = items.length;
-  const seg = (Math.PI*2)/n;
-  const targetIndex = Math.floor(Math.random()*n);
-  const targetAngle = (Math.PI*1.5) - (targetIndex*seg + seg/2); // pointer en haut
-  const turns = 4 + Math.random()*2;
-  const final = targetAngle + turns*2*Math.PI;
-  const start = performance.now(), dur = 3200 + Math.random()*1200;
-  const startAngle = angle;
-
-  requestAnimationFrame(function anim(t){
-    const p = Math.min(1, (t-start)/dur);
-    const ease = 1 - Math.pow(1-p,3);
-    const a = startAngle + (final - startAngle)*ease;
-    rotor.style.transform = `rotate(${a}rad)`;
-    if(p<1){ requestAnimationFrame(anim); }
-    else {
-      angle = ((targetAngle% (2*Math.PI))+2*Math.PI)%(2*Math.PI);
-      rotor.style.transform = `rotate(${angle}rad)`;
-      spinning=false;
-      const chosen = items[targetIndex];
-      showModal(chosen);
-      if(navigator.vibrate) navigator.vibrate([10,40,20]);
+function setupParticles(canvas,isSun){
+  const dpr=DPR();
+  function fit(){ canvas.width=Math.floor(innerWidth*dpr); canvas.height=Math.floor(innerHeight*dpr); }
+  fit(); addEventListener('resize',fit);
+  const ctx=canvas.getContext('2d'); let P=[]; for(let i=0;i<120;i++) P.push(spawn(isSun));
+  (function loop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height); ctx.globalCompositeOperation='lighter';
+    for(const p of P){
+      p.y+=p.vy; p.x+=Math.sin(p.life*.03)*p.vx; p.life--;
+      if(isSun){ const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r); g.addColorStop(0,'rgba(255,210,120,.55)'); g.addColorStop(1,'rgba(255,170,60,0)'); ctx.fillStyle=g; }
+      else{ ctx.fillStyle=`rgba(210,230,255,${.35+.25*Math.random()})`; }
+      ctx.beginPath(); isSun?ctx.arc(p.x,p.y,p.r,0,Math.PI*2):ctx.rect(p.x,p.y,p.r,p.r); ctx.fill();
+      if(p.life<=0 || p.y<-50*dpr || p.y>canvas.height+50*dpr){ Object.assign(p, spawn(isSun)); p.y=isSun?canvas.height+20*dpr:Math.random()*canvas.height; }
     }
+    requestAnimationFrame(loop);
+  })();
+}
+function spawn(isSun){ const dpr=DPR(), W=Math.floor(innerWidth*dpr), H=Math.floor(innerHeight*dpr);
+  return isSun? {x:Math.random()*W,y:H+Math.random()*200*dpr,vx:.6*dpr,vy:-(.6+Math.random()*1.2)*dpr,r:(3+Math.random()*7)*dpr,life:300+Math.random()*200}
+               : {x:Math.random()*W,y:Math.random()*H,vx:.5*dpr,vy:(Math.random()*.4-.2)*dpr,r:(1+Math.random()*2)*dpr,life:240+Math.random()*240};}
+
+/* ==== SPIN ==== */
+function spinRandom(){
+  if(spinning) return; spinning=true;
+  const n=items.length, seg=(Math.PI*2)/n;
+  const idx=Math.floor(Math.random()*n);
+  const target = (Math.PI*1.5) - (idx*seg + seg/2); // pointer en haut
+  const turns = 4 + Math.random()*2;
+  const startA = angle, endA = target + turns*2*Math.PI;
+  const dur = 3200 + Math.random()*1200, t0 = performance.now();
+  requestAnimationFrame(function anim(t){
+    const p = clamp((t-t0)/dur,0,1); const e = 1 - Math.pow(1-p,3);
+    const a = startA + (endA - startA)*e; rotor.style.transform=`rotate(${a}rad)`;
+    if(p<1) requestAnimationFrame(anim); else { angle = ((target%(2*Math.PI))+2*Math.PI)%(2*Math.PI); rotor.style.transform=`rotate(${angle}rad)`; spinning=false; showModal(items[idx]); if(navigator.vibrate) navigator.vibrate([10,40,20]); }
   });
 }
-hub.addEventListener('click', spinRandom);
+$('#hub').addEventListener('click', spinRandom);
 
-/* (optionnel) drag inertiel minimal + snap */
+/* Drag inertiel + snap propre */
 let dragging=false, lastA=0;
-rotor.addEventListener('pointerdown', e=>{
-  dragging=true; rotor.setPointerCapture(e.pointerId); lastA = getAngle(e);
-});
-window.addEventListener('pointermove', e=>{
-  if(!dragging) return;
-  const a = getAngle(e);
-  const da = a - lastA; lastA = a;
-  angle += da;
-  rotor.style.transform = `rotate(${angle}rad)`;
-  e.preventDefault();
-}, {passive:false});
-window.addEventListener('pointerup', ()=>{
-  if(!dragging) return; dragging=false;
-  snapToNearest();
-});
-function getAngle(e){
-  const rect = rotor.getBoundingClientRect();
-  const cx = rect.left + rect.width/2;
-  const cy = rect.top  + rect.height/2;
-  return Math.atan2(e.clientY - cy, e.clientX - cx);
-}
-function snapToNearest(){
-  const n = items.length, seg = (Math.PI*2)/n;
-  // angle visé = pointer haut => a = 1.5pi - (idx*seg + seg/2)
-  // on déduit idx le + proche
-  let a = ((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
-  let idx = Math.round( ((Math.PI*1.5) - a)/seg - 0.5 );
-  idx = ((idx%n)+n)%n;
-  const target = (Math.PI*1.5) - (idx*seg + seg/2);
-  rotor.style.transition = 'transform .18s ease-out';
-  rotor.style.transform = `rotate(${target}rad)`;
-  setTimeout(()=>{
-    rotor.style.transition = '';
-    angle = target;
-    showModal(items[idx]);
-  }, 180);
-}
+rotor.addEventListener('pointerdown', e=>{ if(spinning) return; dragging=true; rotor.setPointerCapture(e.pointerId); lastA=getAngle(e); e.preventDefault(); });
+window.addEventListener('pointermove', e=>{ if(!dragging) return; const a=getAngle(e), da=a-lastA; lastA=a; angle+=da; rotor.style.transform=`rotate(${angle}rad)`; e.preventDefault(); }, {passive:false});
+window.addEventListener('pointerup', ()=>{ if(!dragging) return; dragging=false; snap(); });
+function getAngle(e){ const r=rotor.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2; return Math.atan2(e.clientY-cy, e.clientX-cx); }
+function snap(){ const n=items.length, seg=(Math.PI*2)/n; let a=((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI); let idx=Math.round(((Math.PI*1.5)-a)/seg - 0.5); idx=((idx%n)+n)%n; const target=(Math.PI*1.5)-(idx*seg+seg/2); rotor.style.transition='transform .18s ease-out'; rotor.style.transform=`rotate(${target}rad)`; setTimeout(()=>{rotor.style.transition=''; angle=target; showModal(items[idx]);},180); }
 
-/* ===================== PARTICLES ===================== */
-function startParticles(){
-  setupParticleCanvas(pSun, true);
-  setupParticleCanvas(pMoon, false);
-}
-function setupParticleCanvas(canvas, isSun){
-  const dpr = DPR;
-  function resize(){
-    canvas.width  = Math.floor(innerWidth  * dpr);
-    canvas.height = Math.floor(innerHeight * dpr);
-  }
-  resize(); addEventListener('resize', resize);
-  const ctx = canvas.getContext('2d', {alpha:true});
-  let parts = [];
-  for(let i=0;i<120;i++){
-    parts.push(makeParticle(isSun));
-  }
-  function tick(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.globalCompositeOperation = 'lighter';
-    for(const p of parts){
-      p.y += p.vy; p.x += Math.sin(p.life*.03)*p.vx;
-      p.life -= 1;
-      if(isSun){
-        // or doré
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
-        g.addColorStop(0, 'rgba(255,210,120,.55)');
-        g.addColorStop(1, 'rgba(255,170,60,.0)');
-        ctx.fillStyle = g;
-      } else {
-        // poussière d'étoiles
-        ctx.fillStyle = `rgba(210,230,255,${.35 + .25*Math.random()})`;
-      }
-      ctx.beginPath();
-      if(isSun){
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      }else{
-        ctx.rect(p.x, p.y, p.r, p.r);
-      }
-      ctx.fill();
-      if(p.life<=0 || p.y < -50*dpr || p.y > canvas.height+50*dpr){
-        // recycle
-        Object.assign(p, makeParticle(isSun));
-        p.y = isSun ? canvas.height + 20*dpr : Math.random()*canvas.height;
-      }
-    }
-    requestAnimationFrame(tick);
-  }
-  tick();
-}
-function makeParticle(isSun){
-  const dpr = DPR, W = Math.floor(innerWidth*dpr), H = Math.floor(innerHeight*dpr);
-  if(isSun){
-    return {
-      x: Math.random()*W, y: H + Math.random()*200*dpr,
-      vx: 0.6*dpr, vy: - (0.6 + Math.random()*1.2)*dpr,
-      r: (3 + Math.random()*7)*dpr, life: 300 + Math.random()*200
-    };
-  } else {
-    return {
-      x: Math.random()*W, y: Math.random()*H,
-      vx: 0.5*dpr, vy: (Math.random()*.4 - .2)*dpr,
-      r: (1 + Math.random()*2)*dpr, life: 240 + Math.random()*240
-    };
-  }
-}
+/* ==== MODAL ==== */
+function openModal(){ savedScrollY=scrollY; document.body.classList.add('modal-open'); document.body.style.top=`-${savedScrollY}px`; modal.classList.add('is-open'); modal.setAttribute('aria-hidden','false'); halo.style.opacity=.35; }
+function closeModal(){ modal.classList.remove('is-open'); modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); document.body.style.top=''; halo.style.opacity=''; scrollTo(0,savedScrollY); }
+$('.modal__backdrop').addEventListener('click', closeModal); mClose.addEventListener('click', closeModal); mExit.addEventListener('click', closeModal);
+function showModal(a){ mTitle.textContent=a.title; mMeta.textContent=`${a.dur} · ${a.meta}`; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; openModal(); }
 
-/* ===================== MODAL ===================== */
-function openModal(){ // scroll-lock pro
-  savedScrollY = window.scrollY;
-  document.body.classList.add('modal-open');
-  document.body.style.top = `-${savedScrollY}px`;
-  modal.classList.add('is-open');
-  modal.setAttribute('aria-hidden','false');
-}
-function closeModal(){
-  modal.classList.remove('is-open');
-  modal.setAttribute('aria-hidden','true');
-  document.body.classList.remove('modal-open');
-  document.body.style.top = '';
-  window.scrollTo(0, savedScrollY);
-}
-document.querySelector('.modal__backdrop').addEventListener('click', closeModal);
-mClose.addEventListener('click', closeModal);
-mExit.addEventListener('click', closeModal);
-
-function showModal(act){
-  mTitle.textContent = act.title;
-  mMeta.textContent  = `${act.dur} · ${act.meta}`;
-  mDesc.textContent  = act.desc;
-  mGo.href = `https://www.google.com/maps?q=${encodeURIComponent(act.maps)}`;
-  mBadge.textContent = (mode==='sun')? 'Soleil' : 'Lune';
-  openModal();
-}
-
-/* ===================== MODE SWITCH ===================== */
+/* ==== MODE ==== */
 function setMode(m){
-  if(mode===m) return;
-  mode = m;
-  items = [...DATA[mode]];
-  // BG + halo + particles
-  bg.className = 'bg ' + (mode==='sun'?'sun':'moon');
-  halo.className = 'halo ' + (mode==='sun'?'sun':'moon');
-  pSun.style.display = (mode==='sun')?'block':'none';
-  pMoon.style.display = (mode==='moon')?'block':'none';
-  // Tabs
-  if(mode==='sun'){ tabSun.classList.remove('off'); tabSun.setAttribute('aria-selected','true');
-                    tabMoon.classList.add('off');    tabMoon.setAttribute('aria-selected','false'); }
-  else            { tabMoon.classList.remove('off'); tabMoon.setAttribute('aria-selected','true');
-                    tabSun.classList.add('off');     tabSun.setAttribute('aria-selected','false'); }
-  // redraw
-  resizeWheel();
-  // conserver l’angle actuel mais réaligner visuellement
-  rotor.style.transform = `rotate(${angle}rad)`;
+  if(mode===m) return; mode=m; items=[...DATA[m]];
+  bg.className='bg '+(m==='sun'?'sun':'moon');
+  halo.className='halo '+(m==='sun'?'sun':'moon');
+  pSun.style.display = (m==='sun')?'block':'none';
+  pMoon.style.display = (m==='moon')?'block':'none';
+  tabSun.classList.toggle('off', m!=='sun'); tabSun.setAttribute('aria-selected', m==='sun');
+  tabMoon.classList.toggle('off', m!=='moon'); tabMoon.setAttribute('aria-selected', m==='moon');
+  drawWheel(); rotor.style.transform=`rotate(${angle}rad)`; // garde l’angle visuel
 }
 tabSun.addEventListener('click', ()=>setMode('sun'));
 tabMoon.addEventListener('click', ()=>setMode('moon'));
 
-/* ===================== INIT ===================== */
-resizeWheel();
-startParticles();
-rotor.style.transform = `rotate(${angle}rad)`;
-
-/* sécurité : empêcher pinch-zoom pendant drag dans la zone de la roue */
-document.getElementById('wheelWrap').addEventListener('gesturestart', e=>e.preventDefault());
+/* ==== INIT ==== */
+window.addEventListener('DOMContentLoaded', ()=>{ // purge vieux labels DOM éventuels
+  document.querySelectorAll('.segLabel,.label,.wheel-label').forEach(n=>n.remove());
+  sizeWheel(); startParticles(); rotor.style.transform=`rotate(${angle}rad)`;
+});
+document.getElementById('wheelWrap').addEventListener('gesturestart', e=>e.preventDefault()); // bloque pinch-zoom iOS
 </script>
 </body>
 </html>
