@@ -40,14 +40,14 @@ body[data-mode="moon"] #dawnDusk{opacity:.22}
 #wheelWrap{position:relative;width:100%;height:100%;transform-origin:50% 50%;will-change:transform;transition: transform 3.2s cubic-bezier(.12,.6,0,1);contain: layout paint size}
 
 /* Halo autour de la roue */
-#halo{position:absolute;inset:-6%;border-radius:999px;z-index:6;pointer-events:none;opacity:.65;filter:blur(16px) saturate(120%);-webkit-mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%);mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%)}
+#halo{position:absolute;inset:-6%;border-radius:999px;z-index:6;pointer-events:none;opacity:.65;filter:blur(16px) saturate(120%);-webkit-mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%);mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%);} body.modal-open #halo{opacity:.35} /* atténue sous popup */
 #halo.sun{background:conic-gradient(from 0deg, rgba(255,210,110,.18), rgba(255,170,60,.28), rgba(255,240,170,.18), rgba(255,210,110,.18));animation:haloSpin 16s linear infinite}
 #halo.moon{background:conic-gradient(from 0deg, rgba(180,190,255,.18), rgba(120,110,255,.28), rgba(220,230,255,.12), rgba(180,190,255,.18));animation:haloSpin 22s linear infinite}
 @keyframes haloSpin{to{transform:rotate(360deg)}}
 
 /* Calques wheel */
 #wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;z-index:1;opacity:.92}
-#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;z-index:5;background:transparent}
+#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;z-index:5;background:transparent} body.modal-open .pointer, body.modal-open .hub{opacity:.15;filter:blur(1px)}
 
 /* Hub (bouton central) */
 .hub{position:absolute;top:50%;left:50%;translate:-50% -50%;width:20%;aspect-ratio:1/1;border-radius:999px;background: radial-gradient(circle at 50% 40%, #ffffff, #f3f6ff 60%, #e5ecff);box-shadow: 0 14px 26px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.8);display:grid;place-items:center;z-index:7}
@@ -55,9 +55,9 @@ body[data-mode="moon"] #dawnDusk{opacity:.22}
 #spin:active{transform:scale(.97)}
 
 /* ---------- MODAL (scroll-lock pro) ---------- */
-#modalRoot{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:4000}
+#modalRoot{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:5000} /* au-dessus de tout */
 #modalRoot.show{display:block}
-.modal{position:fixed;inset:0;display:block}
+.modal{position:fixed;inset:0;display:none} .modal.show{display:block} /* évite le flou au chargement */
 .backdrop{position:fixed;inset:0;background:rgba(6,10,20,.5);backdrop-filter: blur(8px)}
 .sheet{position:relative;width:min(680px,92vw);border-radius:22px;padding:18px 16px;background:radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,.08) 55%), linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2);animation:scaleIn .24s ease forwards;opacity:0}
 @keyframes scaleIn{to{opacity:1;transform:none}}
@@ -73,7 +73,7 @@ body[data-mode="moon"] #dawnDusk{opacity:.22}
 .sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
 
 /* ---------- PARTICLES canvases ---------- */
-#sparks,#stars{position:fixed;inset:0;pointer-events:none;z-index:3500;mix-blend-mode:screen}
+#sparks,#stars{position:fixed;inset:0;pointer-events:none;z-index:-1;mix-blend-mode:screen} /* ambiance derrière la scène */
 
 @media (prefers-reduced-motion: reduce){ #wheelWrap{transition:none!important} }
 </style>
@@ -231,8 +231,8 @@ $('#tabMoon').addEventListener('click', ()=> setMode('moon'));
 function setMode(m){ if(mode===m) return; mode=m; document.body.dataset.mode=m; $('#tabSun').setAttribute('aria-pressed', m==='sun'); $('#tabMoon').setAttribute('aria-pressed', m==='moon'); pool=m==='sun'?[...SUN]:[...MOON]; currentSet=shuffle(pool).slice(0,MAX_SEG); skin.src=m==='sun'?'assets/wheel_sun.png':'assets/wheel_moon.png'; halo.className = m==='sun'?'sun':'moon'; wheelWrap.style.transition='none'; baseDeg=0; wheelWrap.style.transform='rotate(0deg)'; requestAnimationFrame(()=>{ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; drawWheel(); }); }
 
 /* ===================== Modal + scroll-lock pro ===================== */
-function showResult(a){ mTitle.textContent=a.title; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mDuration.textContent=a.dur; mTip.textContent=a.tip; mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; lockScroll(); modalBackdrop.style.display='block'; modalRoot.classList.add('show'); }
-function hideModal(){ modalRoot.classList.remove('show'); modalBackdrop.style.display='none'; unlockScroll(); }
+function showResult(a){ mTitle.textContent=a.title; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mDuration.textContent=a.dur; mTip.textContent=a.tip; mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; lockScroll(); document.body.classList.add('modal-open'); modalBackdrop.classList.add('show'); modalRoot.classList.add('show'); }`; lockScroll(); modalBackdrop.style.display='block'; modalRoot.classList.add('show'); }
+function hideModal(){ modalRoot.classList.remove('show'); modalBackdrop.classList.remove('show'); document.body.classList.remove('modal-open'); unlockScroll(); }
 [backdrop,mClose,closex].forEach(el=> el.addEventListener('click', hideModal));
 
 function lockScroll(){ savedScrollY=window.scrollY||document.documentElement.scrollTop; document.body.style.position='fixed'; document.body.style.top=`-${savedScrollY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; }
