@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Roue Soleil/Lune — Nevers (Ultimate)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
+<title>Roue Soleil/Lune — Nevers (stabilisée)</title>
 <style>
 :root{
   --ink:#f6f8ff; --muted:#b9c6dd; --stroke:rgba(255,255,255,.16);
@@ -12,19 +12,19 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%}
+html,body{overscroll-behavior:none} /* évite pull-to-refresh */
 body{margin:0;color:var(--ink);font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,Inter,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2) 55%,var(--bg1));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
-/* ---------- Fond transition Soleil/Lune (PNG 816×1456) ---------- */
+/* ---------- Fonds (PNG 816×1456) + transition douce ---------- */
 body::before, body::after{content:"";position:fixed;inset:0;z-index:-3;pointer-events:none;background-size:cover;background-position:center;transition:opacity 900ms ease}
 body::before{opacity:1;background-image:url("assets/bg_sun.png")}
 body::after{opacity:0;background-image:url("assets/bg_moon.png")}
 body[data-mode="moon"]::before{opacity:0}
 body[data-mode="moon"]::after{opacity:1}
 
-/* Overlay lever/coucher */
-#dawnDusk{position:fixed;inset:0;pointer-events:none;z-index:-2;background:radial-gradient(120% 100% at 50% 120%, rgba(255,200,80,.25), rgba(0,0,0,0));opacity:.0;transition:opacity 900ms ease}
-body[data-mode="sun"] #dawnDusk{opacity:.12}
-body[data-mode="moon"] #dawnDusk{opacity:.24}
+/* overlay lever/coucher léger */
+#dawnDusk{position:fixed;inset:0;pointer-events:none;z-index:-2;background:radial-gradient(120% 100% at 50% 120%, rgba(255,200,80,.22), rgba(0,0,0,0));opacity:.12;transition:opacity 900ms ease}
+body[data-mode="moon"] #dawnDusk{opacity:.22}
 
 .app{min-height:100dvh;padding:12px 16px 18dvh;display:flex;flex-direction:column;gap:10px}
 .header{display:flex;align-items:center;gap:12px;justify-content:center}
@@ -32,32 +32,35 @@ body[data-mode="moon"] #dawnDusk{opacity:.24}
 .tab[aria-pressed="true"]{background:linear-gradient(145deg,#fff6d6,#ffe3a7 45%,#cfe6ff);color:#0b0f1f}
 
 /* ---------- SCÈNE ---------- */
-.stage{position:relative;width:min(92vw,580px);margin:8px auto 0;aspect-ratio:1/1}
-.pointer{position:absolute;top:-2px;left:50%;translate:-50% 0;z-index:6;width:40px;height:40px;background: radial-gradient(circle at 60% 40%, var(--violet), var(--violetDeep));-webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;filter: drop-shadow(0 10px 20px rgba(0,0,0,.6))}
+.stage{position:relative;width:min(92vw,580px);margin:8px auto 0;aspect-ratio:1/1;touch-action:none} /* bloque scroll/zoom pendant l'interaction */
+.pointer{position:absolute;top:-2px;left:50%;translate:-50% 0;z-index:7;width:40px;height:40px;background: radial-gradient(circle at 60% 40%, var(--violet), var(--violetDeep));-webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;filter: drop-shadow(0 12px 22px rgba(0,0,0,.55))}
+.pointer::after{content:"";position:absolute;inset:-12px;border-radius:999px;box-shadow:0 0 22px 8px rgba(139,124,255,.35)}
 
-/* Tourne TOUT le wrap (GPU) */
+/* Wrap tournant (GPU) */
 #wheelWrap{position:relative;width:100%;height:100%;transform-origin:50% 50%;will-change:transform;transition: transform 3.2s cubic-bezier(.12,.6,0,1);contain: layout paint size}
-#halo{position:absolute;inset:-3%;border-radius:999px;z-index:2;pointer-events:none;opacity:.65;filter:blur(10px) saturate(120%);}
-#halo.sun{background:conic-gradient(from 0deg, rgba(255,220,120,.15), rgba(255,170,60,.25), rgba(255,240,170,.15), rgba(255,220,120,.15));animation:haloSpin 15s linear infinite}
-#halo.moon{background:conic-gradient(from 0deg, rgba(180,190,255,.16), rgba(120,110,255,.25), rgba(220,230,255,.12), rgba(180,190,255,.16));animation:haloSpin 22s linear infinite}
+
+/* Halo autour de la roue */
+#halo{position:absolute;inset:-6%;border-radius:999px;z-index:6;pointer-events:none;opacity:.65;filter:blur(16px) saturate(120%);-webkit-mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%);mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%)}
+#halo.sun{background:conic-gradient(from 0deg, rgba(255,210,110,.18), rgba(255,170,60,.28), rgba(255,240,170,.18), rgba(255,210,110,.18));animation:haloSpin 16s linear infinite}
+#halo.moon{background:conic-gradient(from 0deg, rgba(180,190,255,.18), rgba(120,110,255,.28), rgba(220,230,255,.12), rgba(180,190,255,.18));animation:haloSpin 22s linear infinite}
 @keyframes haloSpin{to{transform:rotate(360deg)}}
 
-/* Calques */
+/* Calques wheel */
 #wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;z-index:1;opacity:.92}
-#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;z-index:3;background:transparent}
+#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;z-index:5;background:transparent}
 
 /* Hub (bouton central) */
 .hub{position:absolute;top:50%;left:50%;translate:-50% -50%;width:20%;aspect-ratio:1/1;border-radius:999px;background: radial-gradient(circle at 50% 40%, #ffffff, #f3f6ff 60%, #e5ecff);box-shadow: 0 14px 26px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.8);display:grid;place-items:center;z-index:7}
 #spin{appearance:none;border:none;cursor:pointer;border-radius:999px;width:72%;aspect-ratio:1/1;background: radial-gradient(circle at 50% 45%, #ffffff, #f7f7ff 60%, #e6eaff);box-shadow: inset 0 1px 0 rgba(255,255,255,.8);transition: transform .18s ease}
 #spin:active{transform:scale(.97)}
 
-/* ---------- MODAL ---------- */
-.modal{position:fixed;inset:0;display:none;place-items:center;z-index:4000}
-.modal.show{display:grid}
-.backdrop{position:absolute;inset:0;background:rgba(6,10,20,.5);backdrop-filter: blur(8px)}
-.sheet{position:relative;width:min(680px,92vw);border-radius:22px;padding:18px 16px;background:radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,.08) 55%), linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2);animation:pop .28s ease forwards;opacity:0;transform:translateY(10px)}
-.sheet:before{content:"";position:absolute;left:50%;top:-10px;translate:-50% 0;width:94px;height:12px;border-radius:999px;background:linear-gradient(90deg,#ffe8b8,#b9c9ff)}
-@keyframes pop{to{opacity:1;transform:none}}
+/* ---------- MODAL (scroll-lock pro) ---------- */
+#modalRoot{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:4000}
+#modalRoot.show{display:block}
+.modal{position:fixed;inset:0;display:block}
+.backdrop{position:fixed;inset:0;background:rgba(6,10,20,.5);backdrop-filter: blur(8px)}
+.sheet{position:relative;width:min(680px,92vw);border-radius:22px;padding:18px 16px;background:radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,.08) 55%), linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2);animation:scaleIn .24s ease forwards;opacity:0}
+@keyframes scaleIn{to{opacity:1;transform:none}}
 .sheet h3{margin:0 0 6px;font-size:20px}
 .details{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
 .badge{padding:4px 8px;border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,.08);font-weight:700}
@@ -67,9 +70,10 @@ body[data-mode="moon"] #dawnDusk{opacity:.24}
 .sheet .go{background: linear-gradient(145deg,#cfe6ff,#9bc9ff)}
 .sheet .close{background: linear-gradient(145deg,#ffe3a7,#ffbd7c)}
 .close-x{position:absolute;top:10px;right:10px;border:0;background:transparent;color:#fff;font-size:22px;opacity:.8;cursor:pointer}
+.sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
 
-/* Effets en option */
-#stars, #sparks{position:fixed;inset:0;pointer-events:none;z-index:5}
+/* ---------- PARTICLES canvases ---------- */
+#sparks,#stars{position:fixed;inset:0;pointer-events:none;z-index:3500;mix-blend-mode:screen}
 
 @media (prefers-reduced-motion: reduce){ #wheelWrap{transition:none!important} }
 </style>
@@ -93,15 +97,11 @@ body[data-mode="moon"] #dawnDusk{opacity:.24}
   </div>
 </div>
 
-<!-- Modal résultat (popup) -->
-<div id="modal" class="modal" aria-modal="true" role="dialog">
-  <div class="backdrop" id="backdrop"></div>
+<!-- Modal résultat (popup) : centré en fixed, avec scroll-lock pro -->
+<div id="modalRoot">
   <div class="sheet">
     <button class="close-x" id="closex" aria-label="Fermer">×</button>
-    <div class="details">
-      <h3 id="mTitle"></h3>
-      <span id="mBadge" class="badge">Soleil</span>
-    </div>
+    <div class="details"><h3 id="mTitle"></h3><span id="mBadge" class="badge">Soleil</span></div>
     <div class="meta"><span id="mDuration"></span>· <span id="mTip"></span></div>
     <p id="mDesc" style="margin:8px 0 0"></p>
     <div class="actions">
@@ -110,6 +110,7 @@ body[data-mode="moon"] #dawnDusk{opacity:.24}
     </div>
   </div>
 </div>
+<div class="modal" id="modalBackdrop" aria-hidden="true"><div id="backdrop" class="backdrop"></div></div>
 
 <!-- Particules / étoiles -->
 <canvas id="sparks"></canvas>
@@ -155,17 +156,22 @@ const MOON=[
 const MAX_SEG=12; let mode='sun'; let pool=[...SUN]; let currentSet=shuffle(pool).slice(0,MAX_SEG);
 const wheelWrap=$('#wheelWrap'); const wheel=$('#wheelCanvas'); const skin=$('#wheelSkin'); const halo=$('#halo');
 const ctx=wheel.getContext('2d'); const spinBtn=$('#spin');
-const modal=$('#modal'); const mTitle=$('#mTitle'); const mDesc=$('#mDesc'); const mGo=$('#mGo'); const mClose=$('#mClose'); const closex=$('#closex'); const backdrop=$('#backdrop'); const mBadge=$('#mBadge'); const mDuration=$('#mDuration'); const mTip=$('#mTip');
+const modalRoot=$('#modalRoot'); const mTitle=$('#mTitle'); const mDesc=$('#mDesc'); const mGo=$('#mGo'); const mClose=$('#mClose'); const closex=$('#closex'); const mBadge=$('#mBadge'); const mDuration=$('#mDuration'); const mTip=$('#mTip'); const modalBackdrop=$('#modalBackdrop'); const backdrop=$('#backdrop');
 const canvasSparks=$('#sparks'); const sctx=canvasSparks.getContext('2d');
 const canvasStars=$('#stars'); const tctx=canvasStars.getContext('2d');
-let baseDeg=0, spinning=false, drag=false, dragStart=0, startAngle=0, lastAngle=0, lastTime=0, velocity=0;
+let baseDeg=0, spinning=false, drag=false, dragStart=0, startAngle=0, lastAngle=0, lastTime=0, velocity=0, savedScrollY=0;
 
 function $(sel){return document.querySelector(sel)}
 function shuffle(a){a=[...a]; for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];} return a}
 
 /* ===================== Canvas sizing DPI-proof ===================== */
-function sizeCanvas(){ const rect=wheel.getBoundingClientRect(); const w=Math.max(1,rect.width), h=Math.max(1,rect.height); const dpr=Math.max(1,Math.round((devicePixelRatio||1)*100)/100); wheel.width=Math.round(w*dpr); wheel.height=Math.round(h*dpr); wheel.style.width=w+'px'; wheel.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); fitParticleCanvases(); }
-function fitParticleCanvases(){ const dpr=devicePixelRatio||1; [canvasSparks,canvasStars].forEach(cv=>{ cv.width=innerWidth*dpr; cv.height=innerHeight*dpr; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }); }
+function dprCap(){ return Math.min(2, Math.max(1, Math.round((devicePixelRatio||1)*100)/100)); }
+function sizeCanvas(){ const rect=wheel.getBoundingClientRect(); const w=Math.max(1,rect.width), h=Math.max(1,rect.height); const dpr=dprCap(); wheel.width=Math.round(w*dpr); wheel.height=Math.round(h*dpr); wheel.style.width=w+'px'; wheel.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); fitParticleCanvases(); }
+function fitParticleCanvases(){ const dpr=dprCap(); [canvasSparks,canvasStars].forEach(cv=>{ cv.width=innerWidth*dpr; cv.height=innerHeight*dpr; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }); }
+
+/* ===================== Util: luminance du segment ===================== */
+function darken(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)-amt,g=((n>>8)&255)-amt,b=(n&255)-amt; r=Math.max(0,r); g=Math.max(0,g); b=Math.max(0,b); return '#'+(r<<16|g<<8|b).toString(16).padStart(6,'0').toUpperCase(); }
+function luminance(hex){ const n=parseInt(hex.slice(1),16); let r=(n>>16)/255,g=((n>>8)&255)/255,b=(n&255)/255; [r,g,b]=[r,g,b].map(v=> v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4)); return 0.2126*r+0.7152*g+0.0722*b; }
 
 /* ===================== Dessin (segments + labels) ===================== */
 function drawWheel(){ sizeCanvas(); const rect=wheel.getBoundingClientRect(); const w=rect.width, h=rect.height; const r=Math.min(w,h)/2, cx=w/2, cy=h/2; ctx.clearRect(0,0,w,h); ctx.save(); ctx.translate(cx,cy);
@@ -183,46 +189,54 @@ function drawWheel(){ sizeCanvas(); const rect=wheel.getBoundingClientRect(); co
     ctx.save(); ctx.globalAlpha=0.78; ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r-22,start,end); ctx.closePath(); ctx.fillStyle=g; ctx.fill(); ctx.restore();
     // séparateur fin
     ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(0,0,r-22,end,end); ctx.stroke();
-    // Label tangent — halo doux
-    const lx=Math.cos(mid)*(r*0.60), ly=Math.sin(mid)*(r*0.60); ctx.save(); ctx.translate(lx,ly); ctx.rotate(mid); ctx.font='16px ui-sans-serif,system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.shadowColor='rgba(0,0,0,.22)'; ctx.shadowBlur=2; ctx.shadowOffsetY=1; ctx.fillStyle=darken(col,55); ctx.fillText(currentSet[i].label,0,0); ctx.restore();
+    // Label tangent — auto-contraste
+    const lx=Math.cos(mid)*(r*0.60), ly=Math.sin(mid)*(r*0.60); ctx.save(); ctx.translate(lx,ly); ctx.rotate(mid); ctx.font='16px ui-sans-serif,system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.shadowColor='rgba(0,0,0,.22)'; ctx.shadowBlur=2; ctx.shadowOffsetY=1; const fill = (luminance(col)>0.7)? '#333842' : darken(col,55); ctx.fillStyle=fill; ctx.fillText(currentSet[i].label,0,0); ctx.restore();
   }
   ctx.restore(); // fin clip
   // Inner verre
   ctx.beginPath(); ctx.arc(0,0,r*0.42,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.12)'; ctx.fill();
   ctx.restore();
 }
-function darken(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)-amt,g=((n>>8)&255)-amt,b=(n&255)-amt; r=Math.max(0,r); g=Math.max(0,g); b=Math.max(0,b); return '#'+(r<<16|g<<8|b).toString(16).padStart(6,'0').toUpperCase(); }
 
 /* ===================== Spin: bouton + drag inertiel ===================== */
 spinBtn.addEventListener('click', ()=> autoSpin());
-function autoSpin(){ if(spinning) return; hideModal(); const n=currentSet.length; const slice=360/n; const idx=(Math.random()*n)|0; const sliceCenter=idx*slice+slice/2; const turns=5; const targetDeg=baseDeg+turns*360+(360-sliceCenter)+(Math.random()*2-1); startSpinTo(targetDeg, ()=> finishSpin(idx)); }
-function startSpinTo(deg, cb){ spinning=true; wheelWrap.style.transform=`translateZ(0) rotate(${deg}deg)`; wheelWrap.addEventListener('transitionend', ()=>{ baseDeg=deg%360; cb&&cb(); spinning=false; }, {once:true}); }
-function finishSpin(idx){ glowSegment(); showResult(currentSet[idx]); burst(); }
+function autoSpin(){ if(spinning) return; hideModal(); const n=currentSet.length; const slice=360/n; const idx=(Math.random()*n)|0; snapToIndex(idx, /*animate*/ true); burst(); }
 
-// Drag
-const wrapEl=wheelWrap; wrapEl.addEventListener('pointerdown', onDown); wrapEl.addEventListener('pointermove', onMove); addEventListener('pointerup', onUp); addEventListener('pointercancel', onUp);
+function snapToIndex(idx, animate){
+  const n=currentSet.length; const slice=360/n; const sliceCenter=idx*slice+slice/2; const turns=5; const targetDeg=baseDeg + turns*360 + (360 - sliceCenter); spinning=true; if(!animate){ wheelWrap.style.transition='none'; }
+  requestAnimationFrame(()=>{ if(!animate){ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; }
+    wheelWrap.style.transform=`translateZ(0) rotate(${targetDeg}deg)`; wheelWrap.addEventListener('transitionend', ()=>{ baseDeg=targetDeg%360; spinning=false; showResult(currentSet[idx]); }, {once:true}); });
+}
+
+// Drag inertiel — et snap précis à un segment pour éviter l'arrêt "entre deux"
+const wrapEl=wheelWrap; wrapEl.addEventListener('pointerdown', onDown); wrapEl.addEventListener('pointermove', onMove, {passive:false}); addEventListener('pointerup', onUp); addEventListener('pointercancel', onUp);
 function angleFromEvent(e){ const rect=wrapEl.getBoundingClientRect(); const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2; return Math.atan2(e.clientY-cy, e.clientX-cx)*180/Math.PI + 180; }
-function onDown(e){ if(spinning) return; drag=true; wrapEl.setPointerCapture(e.pointerId); dragStart=angleFromEvent(e); startAngle=baseDeg; lastAngle=dragStart; lastTime=performance.now(); velocity=0; }
-function onMove(e){ if(!drag) return; const a=angleFromEvent(e); const delta=a-dragStart; baseDeg=startAngle+delta; wheelWrap.style.transition='none'; wheelWrap.style.transform=`rotate(${baseDeg}deg)`; const t=performance.now(); const dt=Math.max(1,t-lastTime); velocity=(a-lastAngle)/dt*1000; lastAngle=a; lastTime=t; }
-function onUp(){ if(!drag) return; drag=false; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; const inertia=velocity*0.8; const deg=baseDeg + inertia*0.6; startSpinTo(deg, ()=>{ const n=currentSet.length; const slice=360/n; let raw=(360-(baseDeg%360))%360; let idx=Math.floor(raw/slice); finishSpin(idx); }); }
-
-/* ===================== Glow segment sélectionné ===================== */
-function glowSegment(){ halo.style.animationDuration = mode==='sun'?'15s':'22s'; halo.className = mode==='sun'?'sun':'moon'; halo.style.opacity = .85; setTimeout(()=> halo.style.opacity=.65, 1000); }
+function onDown(e){ if(spinning) return; e.preventDefault(); drag=true; wrapEl.setPointerCapture(e.pointerId); dragStart=angleFromEvent(e); startAngle=baseDeg; lastAngle=dragStart; lastTime=performance.now(); velocity=0; }
+function onMove(e){ if(!drag) return; e.preventDefault(); const a=angleFromEvent(e); const delta=a-dragStart; baseDeg=startAngle+delta; wheelWrap.style.transition='none'; wheelWrap.style.transform=`rotate(${baseDeg}deg)`; const t=performance.now(); const dt=Math.max(1,t-lastTime); velocity=(a-lastAngle)/dt*1000; lastAngle=a; lastTime=t; }
+function onUp(){ if(!drag) return; drag=false; const n=currentSet.length; const slice=360/n; // inertie simple
+  let deg = baseDeg + velocity*0.6; // + amorti
+  let norm = ((360 - (deg%360)) % 360); // 0 = pointe pile en haut
+  let idx = Math.round(norm / slice) % n; // snap au plus proche centroïde
+  snapToIndex(idx, /*animate*/ true);
+}
 
 /* ===================== Particules Soleil/Lune ===================== */
 function burst(){ if(mode==='sun') sparksUp(); else starDust(); }
-function sparksUp(){ const dpr=devicePixelRatio||1, W=canvasSparks.width=innerWidth*dpr, H=canvasSparks.height=innerHeight*dpr; let P=[]; for(let i=0;i<42;i++){ P.push({x:W/2,y:H*0.35,vx:(Math.random()-.5)*.7*dpr,vy:-(Math.random()*1.2+.6)*dpr,r:3+Math.random()*5,life:60+Math.random()*30}) } let f=0; (function step(){ sctx.clearRect(0,0,W,H); P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.02*dpr; p.life--; const g=sctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r); g.addColorStop(0,'#fff3d6'); g.addColorStop(.5,'#ffd36b'); g.addColorStop(1,'rgba(255,255,255,0)'); sctx.fillStyle=g; sctx.beginPath(); sctx.arc(p.x,p.y,p.r,0,Math.PI*2); sctx.fill(); }); if((f+=1)<80) requestAnimationFrame(step); else sctx.clearRect(0,0,W,H); })(); }
-function starDust(){ const dpr=devicePixelRatio||1, W=canvasStars.width=innerWidth*dpr, H=canvasStars.height=innerHeight*dpr; let P=[]; for(let i=0;i<60;i++){ P.push({x:W/2,y:H*0.35,vx:(Math.random()-.5)*.5*dpr,vy:(Math.random()-.2)*.2*dpr,r:1+Math.random()*2,life:80+Math.random()*40,alpha:1}) } let f=0; (function step(){ tctx.clearRect(0,0,W,H); P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.alpha*=0.98; p.life--; tctx.globalAlpha=p.alpha; tctx.fillStyle='#eae9ff'; tctx.beginPath(); tctx.arc(p.x,p.y,p.r,0,Math.PI*2); tctx.fill(); }); tctx.globalAlpha=1; if((f+=1)<100) requestAnimationFrame(step); else tctx.clearRect(0,0,W,H); })(); }
+function sparksUp(){ const dpr=dprCap(), W=canvasSparks.width=innerWidth*dpr, H=canvasSparks.height=innerHeight*dpr; let P=[]; for(let i=0;i<44;i++){ P.push({x:W/2,y:H*0.35,vx:(Math.random()-.5)*.7*dpr,vy:-(Math.random()*1.2+.6)*dpr,r:(3+Math.random()*5)*dpr*0.5,life:60+Math.random()*30,alpha:.6}) } let f=0; (function step(){ sctx.clearRect(0,0,W,H); sctx.globalCompositeOperation='lighter'; P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.02*dpr; p.life--; p.alpha*=0.985; const g=sctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r); g.addColorStop(0,'rgba(255,243,214,'+p.alpha+')'); g.addColorStop(.5,'rgba(255,211,107,'+p.alpha+')'); g.addColorStop(1,'rgba(255,255,255,0)'); sctx.fillStyle=g; sctx.beginPath(); sctx.arc(p.x,p.y,p.r,0,Math.PI*2); sctx.fill(); }); if((f+=1)<90) requestAnimationFrame(step); else { sctx.clearRect(0,0,W,H); sctx.globalCompositeOperation='source-over'; } })(); }
+function starDust(){ const dpr=dprCap(), W=canvasStars.width=innerWidth*dpr, H=canvasStars.height=innerHeight*dpr; let P=[]; for(let i=0;i<70;i++){ P.push({x:W/2,y:H*0.35,vx:(Math.random()-.5)*.45*dpr,vy:(Math.random()-.2)*.15*dpr,r:(1+Math.random()*2)*dpr*0.6,life:90+Math.random()*40,alpha:1}) } let f=0; (function step(){ tctx.clearRect(0,0,W,H); tctx.globalCompositeOperation='lighter'; P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.alpha*=0.982; p.life--; tctx.globalAlpha=p.alpha; tctx.fillStyle='#eae9ff'; tctx.beginPath(); tctx.arc(p.x,p.y,p.r,0,Math.PI*2); tctx.fill(); }); tctx.globalAlpha=1; if((f+=1)<110) requestAnimationFrame(step); else { tctx.clearRect(0,0,W,H); tctx.globalCompositeOperation='source-over'; } })(); }
 
 /* ===================== Tabs & transition Soleil/Lune ===================== */
 $('#tabSun').addEventListener('click', ()=> setMode('sun'));
 $('#tabMoon').addEventListener('click', ()=> setMode('moon'));
-function setMode(m){ if(mode===m) return; mode=m; document.body.dataset.mode=m; $('#tabSun').setAttribute('aria-pressed', m==='sun'); $('#tabMoon').setAttribute('aria-pressed', m==='moon'); pool=m==='sun'?[...SUN]:[...MOON]; currentSet=shuffle(pool).slice(0,MAX_SEG); skin.src=m==='sun'?'assets/wheel_sun.png':'assets/wheel_moon.png'; halo.className = m==='sun'?'sun':'moon'; wheelWrap.style.transition='none'; wheelWrap.style.transform='rotate(0deg)'; baseDeg=0; requestAnimationFrame(()=>{ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; drawWheel(); }); }
+function setMode(m){ if(mode===m) return; mode=m; document.body.dataset.mode=m; $('#tabSun').setAttribute('aria-pressed', m==='sun'); $('#tabMoon').setAttribute('aria-pressed', m==='moon'); pool=m==='sun'?[...SUN]:[...MOON]; currentSet=shuffle(pool).slice(0,MAX_SEG); skin.src=m==='sun'?'assets/wheel_sun.png':'assets/wheel_moon.png'; halo.className = m==='sun'?'sun':'moon'; wheelWrap.style.transition='none'; baseDeg=0; wheelWrap.style.transform='rotate(0deg)'; requestAnimationFrame(()=>{ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; drawWheel(); }); }
 
-/* ===================== Modal ===================== */
-function showResult(a){ mTitle.textContent=a.title; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mDuration.textContent=a.dur; mTip.textContent=a.tip; mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; modal.classList.add('show'); document.body.style.overflow='hidden'; }
-function hideModal(){ modal.classList.remove('show'); document.body.style.overflow=''; }
+/* ===================== Modal + scroll-lock pro ===================== */
+function showResult(a){ mTitle.textContent=a.title; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mDuration.textContent=a.dur; mTip.textContent=a.tip; mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; lockScroll(); modalBackdrop.style.display='block'; modalRoot.classList.add('show'); }
+function hideModal(){ modalRoot.classList.remove('show'); modalBackdrop.style.display='none'; unlockScroll(); }
 [backdrop,mClose,closex].forEach(el=> el.addEventListener('click', hideModal));
+
+function lockScroll(){ savedScrollY=window.scrollY||document.documentElement.scrollTop; document.body.style.position='fixed'; document.body.style.top=`-${savedScrollY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; }
+function unlockScroll(){ document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; window.scrollTo(0, savedScrollY||0); }
 
 /* ===================== Init ===================== */
 addEventListener('resize', ()=>{ drawWheel(); fitParticleCanvases(); }, {passive:true});
