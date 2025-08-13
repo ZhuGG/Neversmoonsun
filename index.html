@@ -3,62 +3,69 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<title>Roue Soleil/Lune — Reset</title>
+<title>Roue Soleil/Lune — Clean Build</title>
 <style>
   :root{
     --ink:#eef1f7; --muted:#b9c2d6; --stroke:rgba(255,255,255,.22);
     --haloSun1:#FFD07A; --haloSun2:#FF9F6C;
     --haloMoon1:#9CC8FF; --haloMoon2:#A38CFF;
     --violet:#6f4aff;
+    --glassA:rgba(255,255,255,.18); --glassB:rgba(255,255,255,.10);
   }
   *{box-sizing:border-box}
   html,body{height:100%; overscroll-behavior:none}
-  body{margin:0; color:var(--ink); font:16px/1.4 -apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,system-ui,Arial; background:#0b0f1a}
+  body{margin:0; background:#0b0f1a; color:var(--ink);
+       font:16px/1.4 -apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,system-ui,Arial}
   body.modal-open{position:fixed; left:0; right:0; width:100%} /* scroll-lock */
 
-  /* ===== Layers ===== */
-  .bg{position:fixed; inset:0; z-index:-3; background:#0b0f1a center/cover no-repeat}
-  .bg.sun{background-image:url(assets/bg_sun.png)}
-  .bg.moon{background-image:url(assets/bg_moon.png)}
-  .particles{position:fixed; inset:0; z-index:-1; pointer-events:none} /* derrière la roue */
+  /* ====== LAYERS ====== */
+  #bg{position:fixed; inset:0; z-index:-2; background:#0b0f1a center/cover no-repeat}
+  #bg.sun{background-image:url(assets/bg_sun.png)}
+  #bg.moon{background-image:url(assets/bg_moon.png)}
 
-  .stage{position:relative; min-height:100dvh; padding:12px 12px 22dvh; display:flex; flex-direction:column; gap:12px; touch-action:none}
+  .particles{position:fixed; inset:0; z-index:0; pointer-events:none} /* au-dessus du bg, sous la roue */
+
+  .stage{position:relative; min-height:100dvh; padding:12px 12px 22dvh;
+         display:flex; flex-direction:column; touch-action:none}
 
   /* Tabs */
-  .tabs{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:8px}
+  .tabs{position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:8px}
   .tab{padding:9px 16px; border-radius:999px; backdrop-filter: blur(12px);
-       background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08));
+       background:linear-gradient(145deg,var(--glassA),var(--glassB));
        border:1px solid var(--stroke); font-weight:800; color:#101425; cursor:pointer; user-select:none}
   .tab.off{color:#e6ebff; opacity:.65}
 
   /* Wheel */
-  .wheel-wrap{position:relative; width:min(92vw,560px); aspect-ratio:1/1; margin:70px auto 0; z-index:2; overflow:hidden}
+  .wheel-wrap{position:relative; width:min(92vw,560px); aspect-ratio:1/1; margin:70px auto 0;
+              z-index:2; overflow:hidden}
   .wheel-border{position:absolute; inset:-2%; border-radius:50%; pointer-events:none;
     box-shadow: inset 0 0 0 8px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.15);}
-  .halo{position:absolute; inset:-6%; border-radius:50%; pointer-events:none; z-index:3;
-    filter:blur(16px) saturate(120%); opacity:.62; mix-blend-mode:screen;
-    mask: radial-gradient(circle at 50% 50%, transparent 54%, #000 56%, #000); animation:spinHalo 18s linear infinite}
+  .halo{position:absolute; inset:-5%; border-radius:50%; pointer-events:none; z-index:3;
+    filter:blur(14px) saturate(120%); opacity:.62; mix-blend-mode:screen;
+    mask: radial-gradient(circle at 50% 50%, transparent 56%, #000 58%, #000);
+    animation:spinHalo 18s linear infinite}
   .halo.sun{background:conic-gradient(from 0deg, var(--haloSun1), var(--haloSun2), var(--haloSun1))}
   .halo.moon{background:conic-gradient(from 0deg, var(--haloMoon1), var(--haloMoon2), var(--haloMoon1))}
   @keyframes spinHalo{to{transform:rotate(360deg)}}
 
   /* rotor = seul élément qui tourne */
   .rotor{position:absolute; inset:0; transform:rotate(0deg); will-change:transform}
-  .wheel-canvas{position:absolute; inset:0; z-index:2}
-  .wheel-skin{position:absolute; inset:0; border-radius:50%; pointer-events:none; z-index:2; opacity:.9; display:none} /* active si tu as un PNG skin */
+  #wheel{display:block; position:absolute; inset:0; z-index:2; pointer-events:none}
+  .wheel-skin{position:absolute; inset:0; z-index:2; border-radius:50%; pointer-events:none; opacity:.9; display:none} /* active si besoin */
 
-  .pointer{position:absolute; top:-6px; left:50%; transform:translate(-50%,0); z-index:5; width:24px; height:38px; pointer-events:none;
+  .pointer{position:absolute; top:-6px; left:50%; transform:translate(-50%,0); z-index:5;
+    width:24px; height:38px; pointer-events:none;
     background: radial-gradient(circle at 50% 60%, #8c76ff, var(--violet) 60%, #5130df 100%);
     -webkit-clip-path: path("M12 0 C18 8 18 30 12 38 C6 30 6 8 12 0 Z");
             clip-path: path("M12 0 C18 8 18 30 12 38 C6 30 6 8 12 0 Z");
     filter: drop-shadow(0 8px 10px rgba(0,0,0,.5));
   }
-  .hub{position:absolute; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%);
+  #hub{position:absolute; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%);
     width:26%; aspect-ratio:1/1; border-radius:50%; z-index:6; display:grid; place-items:center; cursor:pointer;
     background:radial-gradient(circle at 50% 40%, rgba(255,255,255,.85), rgba(255,255,255,.55) 55%, rgba(255,255,255,.18) 75%);
     box-shadow: 0 16px 40px rgba(0,0,0,.45), inset 0 2px 8px rgba(255,255,255,.85);}
-  .hub:active{scale:.98}
-  .hub::after{content:""; width:62%; aspect-ratio:1/1; border-radius:50%;
+  #hub:active{scale:.98}
+  #hub::after{content:""; width:62%; aspect-ratio:1/1; border-radius:50%;
     background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.95), rgba(255,255,255,.6));
     box-shadow: inset 0 1px 2px rgba(0,0,0,.12);}
 
@@ -67,7 +74,8 @@
   .modal.is-open{display:block}
   .modal__backdrop{position:fixed; inset:0; background:rgba(10,12,20,.4); backdrop-filter: blur(6px); z-index:4000}
   .modal__sheet{position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.98);
-    width:min(92vw,640px); border-radius:18px; padding:14px; background:linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
+    width:min(92vw,640px); border-radius:18px; padding:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
     border:1px solid rgba(255,255,255,.25); box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
     display:grid; gap:10px; z-index:4001; opacity:0; transition:.25s; padding-bottom:calc(14px + env(safe-area-inset-bottom))}
   .modal.is-open .modal__sheet{opacity:1; transform:translate(-50%,-50%) scale(1)}
@@ -82,17 +90,17 @@
 </style>
 </head>
 <body>
-  <!-- Fonds -->
-  <div id="bg" class="bg sun" aria-hidden="true"></div>
+  <div id="bg" class="sun" aria-hidden="true"></div>
+
   <!-- Particules -->
   <canvas id="pSun" class="particles" aria-hidden="true"></canvas>
   <canvas id="pMoon" class="particles" aria-hidden="true" style="display:none"></canvas>
 
   <div class="stage" id="stage">
     <!-- Tabs -->
-    <div class="tabs" role="tablist">
-      <button id="tabSun"  class="tab"      aria-selected="true">Soleil</button>
-      <button id="tabMoon" class="tab off"  aria-selected="false">Lune</button>
+    <div class="tabs" role="tablist" aria-label="Mode">
+      <button id="tabSun"  class="tab"     aria-selected="true">Soleil</button>
+      <button id="tabMoon" class="tab off" aria-selected="false">Lune</button>
     </div>
 
     <!-- Roue -->
@@ -100,13 +108,14 @@
       <div class="wheel-border" aria-hidden="true"></div>
       <div id="halo" class="halo sun" aria-hidden="true"></div>
 
+      <!-- le rotor est le seul à tourner -->
       <div id="rotor" class="rotor">
-        <canvas id="wheel" class="wheel-canvas" aria-label="Roue"></canvas>
+        <canvas id="wheel" aria-label="Roue"></canvas>
         <!-- <img src="assets/wheel_skin.png" class="wheel-skin" alt="" aria-hidden="true"> -->
       </div>
 
       <div class="pointer" aria-hidden="true"></div>
-      <button id="hub" class="hub" aria-label="Tourner"></button>
+      <button id="hub" aria-label="Tourner"></button>
     </div>
   </div>
 
@@ -131,109 +140,115 @@
   </div>
 
 <script>
-/* ==== DATA ==== */
+/* ========= DATA ========= */
 const DATA = {
   sun: [
-    {label:"VieuxPort", title:"Îlots & passerelles du Vieux-Port", dur:"1 h",   meta:"Nature",   desc:"Mini-îles sauvages, herbes hautes, vue sur Nevers. Parfait en fin d’aprèm.", maps:"Port de la Jonction Nevers"},
-    {label:"Kiosque",    title:"Sieste musicale — Parc Salengro",  dur:"45 min", meta:"Chill",    desc:"Herbe fraîche + livre. Ombre et eau à proximité.", maps:"Parc Roger-Salengro Nevers"},
-    {label:"Vitraux",    title:"Vitraux contemporains",            dur:"40 min", meta:"Frais",    desc:"Dans la cathédrale : colorimétrie moderne, faisceaux lumineux au sol.", maps:"Cathédrale de Nevers"},
-    {label:"Panorama",   title:"Belvédère du Bec d’Allier",        dur:"1 h 15", meta:"Nature",   desc:"Confluent Loire-Allier. Grand air, oiseaux, horizon magnifique.", maps:"Bec d'Allier panorama"},
-    {label:"Boutiques",  title:"Vieilles boutiques de faïence",    dur:"40 min", meta:"Patrimoine",desc:"Repérage d’enseignes historiques et vitrines anciennes.", maps:"Rue du 14 Juillet Nevers"},
-    {label:"Faïence",    title:"Atelier express — faïence",        dur:"1 h",    meta:"Créatif",  desc:"Customise une petite pièce dans un atelier du centre.", maps:"Place Carnot Nevers"},
-    {label:"Belvédères", title:"Remparts + Tour Goguin (sunset)",  dur:"1 h",    meta:"Photo",    desc:"Balade douce jusqu’au coucher de soleil sur la Loire.", maps:"Quai des Mariniers Nevers"},
-    {label:"Polaroid",   title:"Polaroid challenge",               dur:"45 min", meta:"Créatif",  desc:"3 spots → 3 clichés. Souvenir unique.", maps:"Place Carnot Nevers"}
+    {label:"VieuxPort", title:"Îlots & passerelles du Vieux-Port", dur:"1 h",   meta:"Nature",    desc:"Mini-îles sauvages, herbes hautes, vue sur Nevers. Parfait en fin d’aprèm.", maps:"Port de la Jonction Nevers"},
+    {label:"Kiosque",    title:"Sieste musicale — Parc Salengro",   dur:"45 min",meta:"Chill",     desc:"Herbe fraîche + livre. Ombre et eau à proximité.", maps:"Parc Roger-Salengro Nevers"},
+    {label:"Vitraux",    title:"Vitraux contemporains",             dur:"40 min",meta:"Frais",     desc:"Dans la cathédrale : colorimétrie moderne, faisceaux lumineux au sol.", maps:"Cathédrale de Nevers"},
+    {label:"Panorama",   title:"Belvédère du Bec d’Allier",         dur:"1 h 15",meta:"Nature",    desc:"Confluent Loire-Allier. Grand air, oiseaux, horizon magnifique.", maps:"Bec d'Allier panorama"},
+    {label:"Boutiques",  title:"Vieilles boutiques de faïence",     dur:"40 min",meta:"Patrimoine",desc:"Repérage d’enseignes historiques et vitrines anciennes.", maps:"Rue du 14 Juillet Nevers"},
+    {label:"Faïence",    title:"Atelier express — faïence",         dur:"1 h",   meta:"Créatif",   desc:"Customise une petite pièce dans un atelier du centre.", maps:"Place Carnot Nevers"},
+    {label:"Belvédères", title:"Remparts + Tour Goguin (sunset)",   dur:"1 h",   meta:"Photo",     desc:"Balade douce jusqu’au coucher de soleil sur la Loire.", maps:"Quai des Mariniers Nevers"},
+    {label:"Polaroid",   title:"Polaroid challenge",                dur:"45 min",meta:"Créatif",   desc:"3 spots → 3 clichés. Souvenir unique.", maps:"Place Carnot Nevers"}
   ],
   moon: [
-    {label:"Nocturne", title:"Fil Bleu — secrets",     dur:"45 min", meta:"Urbain",    desc:"Version détails cachés du parcours nocturne en ville.", maps:"Palais ducal de Nevers"},
-    {label:"Cinéma",   title:"Séance Art & Essai",     dur:"2 h",    meta:"Frais",     desc:"Film indé en VO si possible. Salle climatisée.", maps:"Cinéma à Nevers"},
-    {label:"Cave",     title:"Cave/bistrot de poche",  dur:"1 h",    meta:"Soirée",    desc:"Un verre intimiste dans une micro-adresse locale.", maps:"bar à vin centre Nevers"},
+    {label:"Nocturne", title:"Fil Bleu — secrets",     dur:"45 min", meta:"Urbain",     desc:"Version détails cachés du parcours nocturne en ville.", maps:"Palais ducal de Nevers"},
+    {label:"Cinéma",   title:"Séance Art & Essai",     dur:"2 h",    meta:"Frais",      desc:"Film indé en VO si possible. Salle climatisée.", maps:"Cinéma à Nevers"},
+    {label:"Cave",     title:"Cave/bistrot de poche",  dur:"1 h",    meta:"Soirée",     desc:"Un verre intimiste dans une micro-adresse locale.", maps:"bar à vin centre Nevers"},
     {label:"StreetArt",title:"Street-art discret",     dur:"45 min", meta:"Underground",desc:"Pochoirs, collages et fresques de poche.", maps:"Place Carnot Nevers"},
-    {label:"Glyphe",   title:"Glyphe mystère",         dur:"30 min", meta:"Curiosité", desc:"Petite chasse à un symbole gravé dans la pierre.", maps:"Centre historique Nevers"},
-    {label:"Fresque",  title:"Fresque XXL cachée",     dur:"30 min", meta:"Photo",     desc:"Repère une grande fresque discrète en nocturne.", maps:"Centre ancien Nevers"},
-    {label:"Étoiles",  title:"Observatoire improvisé", dur:"40 min", meta:"Ciel clair", desc:"Regarde les constellations depuis un point sombre en bord de Loire.", maps:"Bec d'Allier panorama"}
+    {label:"Glyphe",   title:"Glyphe mystère",         dur:"30 min", meta:"Curiosité",  desc:"Petite chasse à un symbole gravé dans la pierre.", maps:"Centre historique Nevers"},
+    {label:"Fresque",  title:"Fresque XXL cachée",     dur:"30 min", meta:"Photo",      desc:"Repère une grande fresque discrète en nocturne.", maps:"Centre ancien Nevers"},
+    {label:"Étoiles",  title:"Observatoire improvisé", dur:"40 min", meta:"Ciel clair", desc:"Ciel sombre près de la Loire pour lever la tête et rêver.", maps:"Bec d'Allier panorama"}
   ]
 };
 
-/* ==== STATE ==== */
+/* ========= STATE & REFS ========= */
 let mode='sun', items=[...DATA.sun], angle=0, spinning=false, savedScrollY=0;
 
-/* ==== ELTS ==== */
-const bg = $('#bg'), tabSun = $('#tabSun'), tabMoon = $('#tabMoon');
-const rotor = $('#rotor'), wheel = $('#wheel'), halo = $('#halo'), hub = $('#hub');
+const $ = s => document.querySelector(s);
+const bg   = $('#bg'), tabSun = $('#tabSun'), tabMoon = $('#tabMoon');
+const wrap = $('#wheelWrap'), rotor = $('#rotor'), wheel = $('#wheel'), halo = $('#halo'), hub = $('#hub');
 const modal = $('#modal'), mTitle=$('#mTitle'), mMeta=$('#mMeta'), mDesc=$('#mDesc'), mGo=$('#mGo'), mBadge=$('#mBadge'), mClose=$('#mClose'), mExit=$('#mExit');
 const pSun = $('#pSun'), pMoon = $('#pMoon');
+const ctx  = wheel.getContext('2d');
 
-/* ==== UTILS ==== */
-function $(s){return document.querySelector(s)}
-function DPR(){ return Math.min(2, Math.round((devicePixelRatio||1)*100)/100); }
-function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-
-/* ==== SIZE & DRAW ==== */
-function paletteSun(i){ const hues=[35,18,340,310,200,160,90,55]; const h=hues[i%hues.length]; return `hsla(${h},70%,75%,0.78)`;}
-function paletteMoon(i){ const hues=[210,230,255,275,295,175,195]; const h=hues[i%hues.length]; return `hsla(${h},55%,72%,0.78)`;}
-function textColorFor(hsla){ const m=hsla.match(/hsla?\\((\\d+),\\s*([\\d.]+)%?,\\s*([\\d.]+)%?/i); if(!m) return '#1b2033'; const L=parseFloat(m[3]); return (L>60)?'#1b2033':'#f8fbff'; }
-
+/* ========= DPI & SIZE ========= */
+const DPR = () => Math.min(2, window.devicePixelRatio || 1);
 function sizeWheel(){
-  const rect=wheel.getBoundingClientRect();
-  const dpr=DPR(); wheel.width=Math.floor(rect.width*dpr); wheel.height=Math.floor(rect.height*dpr);
-  drawWheel();
+  // Taille fiable depuis le WRAP
+  const w = Math.max(1, wrap.clientWidth);
+  const h = Math.max(1, wrap.clientHeight);
+  const dpr = DPR();
+
+  wheel.width  = Math.round(w * dpr);
+  wheel.height = Math.round(h * dpr);
+  wheel.style.width  = w + 'px';
+  wheel.style.height = h + 'px';
+
+  // On dessine en px CSS : on scale le contexte
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
-window.addEventListener('resize', sizeWheel);
-window.addEventListener('orientationchange', ()=>setTimeout(sizeWheel,150));
+function fitParticles(canvas){
+  const dpr = DPR();
+  canvas.width  = Math.round(innerWidth  * dpr);
+  canvas.height = Math.round(innerHeight * dpr);
+  canvas.style.width = '100vw'; canvas.style.height='100vh';
+}
+
+/* ========= DRAW ========= */
+function palSun(i){ const hues=[35,18,340,310,200,160,90,55]; const h=hues[i%hues.length]; return `hsla(${h},70%,75%,0.78)`;}
+function palMoon(i){const hues=[210,230,255,275,295,175,195]; const h=hues[i%hues.length]; return `hsla(${h},55%,72%,0.78)`;}
+function colText(hsla){ const m=hsla.match(/hsla?\((\d+),\s*([\d.]+)%?,\s*([\d.]+)%?/i); if(!m) return '#1b2033'; const L=parseFloat(m[3]); return (L>60)?'#1b2033':'#f8fbff'; }
 
 function drawWheel(){
-  // purge toute trace d’anciens labels DOM potentiels
-  document.querySelectorAll('.segLabel,.label,.wheel-label').forEach(n=>n.remove());
-
-  const ctx=wheel.getContext('2d'); const W=wheel.width, H=wheel.height; const r=Math.min(W,H)/2;
-  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
-  ctx.save(); ctx.translate(W/2,H/2);
+  const w = wheel.clientWidth, h = wheel.clientHeight, r = Math.min(w,h)/2;
+  ctx.clearRect(0,0,w,h);
+  ctx.save(); ctx.translate(w/2, h/2);
 
   // bord clair intérieur
   ctx.beginPath(); ctx.arc(0,0,r*0.98,0,Math.PI*2);
   ctx.strokeStyle='rgba(255,255,255,.28)'; ctx.lineWidth=Math.max(2,r*0.02); ctx.stroke();
 
-  const n=items.length, seg=(Math.PI*2)/n;
+  const n = items.length, seg = (Math.PI*2)/n;
   for(let i=0;i<n;i++){
     const start=i*seg, end=start+seg, mid=start+seg/2;
-    const col=(mode==='sun')?paletteSun(i):paletteMoon(i);
+    const col = (mode==='sun')? palSun(i) : palMoon(i);
 
     // segment translucide
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r*0.86,start,end); ctx.closePath();
-    ctx.fillStyle=col; ctx.fill();
+    ctx.fillStyle = col; ctx.fill();
 
-    // séparateur
+    // séparateur fin
     ctx.beginPath(); ctx.arc(0,0,r*0.86,end,end);
     ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=Math.max(1, r*0.008); ctx.stroke();
 
-    // label sur pastille
+    // label pastille
     const lx=Math.cos(mid)*r*0.58, ly=Math.sin(mid)*r*0.58;
     ctx.save(); ctx.translate(lx,ly); ctx.rotate(mid);
-    const txt=items[i].label; const dpr=DPR();
-    ctx.font = `${14*dpr}px Inter, system-ui, -apple-system`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    const tw=ctx.measureText(txt).width; const padX=14*dpr, padY=8*dpr; const pw=tw+padX*2, ph=30*dpr;
-    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8*dpr; ctx.shadowOffsetY=2*dpr;
+    const txt=items[i].label; ctx.font='14px Inter, system-ui, -apple-system'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    const tw=ctx.measureText(txt).width, pw=tw+28, ph=30;
+    ctx.shadowColor='rgba(0,0,0,.35)'; ctx.shadowBlur=8; ctx.shadowOffsetY=2;
     ctx.fillStyle='rgba(255,255,255,.94)'; roundRect(ctx,-pw/2,-ph/2,pw,ph,999); ctx.fill();
-    ctx.shadowColor='transparent';
-    ctx.fillStyle=textColorFor(col); ctx.fillText(txt,0,1*dpr);
+    ctx.shadowColor='transparent'; ctx.fillStyle=colText(col); ctx.fillText(txt,0,1);
     ctx.restore();
   }
   ctx.restore();
 }
 function roundRect(ctx,x,y,w,h,r){const rr=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+rr,y);ctx.arcTo(x+w,y,x+w,y+h,rr);ctx.arcTo(x+w,y+h,x,y+h,rr);ctx.arcTo(x,y+h,x,y,rr);ctx.arcTo(x,y,x+w,y,rr);ctx.closePath();}
 
-/* ==== PARTICLES (ambiance) ==== */
+/* ========= PARTICLES ========= */
 function startParticles(){
-  setupParticles(pSun,true);
-  setupParticles(pMoon,false);
+  fitParticles(pSun); fitParticles(pMoon);
+  runParticles(pSun,true); runParticles(pMoon,false);
+  addEventListener('resize', ()=>{ fitParticles(pSun); fitParticles(pMoon); });
 }
-function setupParticles(canvas,isSun){
-  const dpr=DPR();
-  function fit(){ canvas.width=Math.floor(innerWidth*dpr); canvas.height=Math.floor(innerHeight*dpr); }
-  fit(); addEventListener('resize',fit);
-  const ctx=canvas.getContext('2d'); let P=[]; for(let i=0;i<120;i++) P.push(spawn(isSun));
+function runParticles(canvas,isSun){
+  const dpr = DPR(); const ctx = canvas.getContext('2d'); const P=[];
+  for(let i=0;i<120;i++) P.push(spawn(isSun));
   (function loop(){
-    ctx.clearRect(0,0,canvas.width,canvas.height); ctx.globalCompositeOperation='lighter';
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.globalCompositeOperation='lighter';
     for(const p of P){
       p.y+=p.vy; p.x+=Math.sin(p.life*.03)*p.vx; p.life--;
       if(isSun){ const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r); g.addColorStop(0,'rgba(255,210,120,.55)'); g.addColorStop(1,'rgba(255,170,60,0)'); ctx.fillStyle=g; }
@@ -244,28 +259,33 @@ function setupParticles(canvas,isSun){
     requestAnimationFrame(loop);
   })();
 }
-function spawn(isSun){ const dpr=DPR(), W=Math.floor(innerWidth*dpr), H=Math.floor(innerHeight*dpr);
+function spawn(isSun){
+  const dpr=DPR(), W=Math.round(innerWidth*dpr), H=Math.round(innerHeight*dpr);
   return isSun? {x:Math.random()*W,y:H+Math.random()*200*dpr,vx:.6*dpr,vy:-(.6+Math.random()*1.2)*dpr,r:(3+Math.random()*7)*dpr,life:300+Math.random()*200}
-               : {x:Math.random()*W,y:Math.random()*H,vx:.5*dpr,vy:(Math.random()*.4-.2)*dpr,r:(1+Math.random()*2)*dpr,life:240+Math.random()*240};}
+               : {x:Math.random()*W,y:Math.random()*H,vx:.5*dpr,vy:(Math.random()*.4-.2)*dpr,r:(1+Math.random()*2)*dpr,life:240+Math.random()*240};
+}
 
-/* ==== SPIN ==== */
+/* ========= SPIN / DRAG ========= */
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 function spinRandom(){
   if(spinning) return; spinning=true;
   const n=items.length, seg=(Math.PI*2)/n;
   const idx=Math.floor(Math.random()*n);
-  const target = (Math.PI*1.5) - (idx*seg + seg/2); // pointer en haut
-  const turns = 4 + Math.random()*2;
-  const startA = angle, endA = target + turns*2*Math.PI;
-  const dur = 3200 + Math.random()*1200, t0 = performance.now();
+  const target=(Math.PI*1.5) - (idx*seg + seg/2); // pointe en haut
+  const turns=4 + Math.random()*2;
+  const startA=angle, endA=target + turns*2*Math.PI;
+  const dur=3200 + Math.random()*1200, t0=performance.now();
   requestAnimationFrame(function anim(t){
-    const p = clamp((t-t0)/dur,0,1); const e = 1 - Math.pow(1-p,3);
-    const a = startA + (endA - startA)*e; rotor.style.transform=`rotate(${a}rad)`;
-    if(p<1) requestAnimationFrame(anim); else { angle = ((target%(2*Math.PI))+2*Math.PI)%(2*Math.PI); rotor.style.transform=`rotate(${angle}rad)`; spinning=false; showModal(items[idx]); if(navigator.vibrate) navigator.vibrate([10,40,20]); }
+    const p = clamp((t-t0)/dur,0,1), e = 1 - Math.pow(1-p,3);
+    const a = startA + (endA - startA)*e;
+    rotor.style.transform=`rotate(${a}rad)`;
+    if(p<1) requestAnimationFrame(anim);
+    else { angle=((target%(2*Math.PI))+2*Math.PI)%(2*Math.PI); rotor.style.transform=`rotate(${angle}rad)`; spinning=false; showModal(items[idx]); if(navigator.vibrate) navigator.vibrate([10,40,20]); }
   });
 }
-$('#hub').addEventListener('click', spinRandom);
+hub.addEventListener('click', spinRandom);
 
-/* Drag inertiel + snap propre */
+/* drag inertiel + snap */
 let dragging=false, lastA=0;
 rotor.addEventListener('pointerdown', e=>{ if(spinning) return; dragging=true; rotor.setPointerCapture(e.pointerId); lastA=getAngle(e); e.preventDefault(); });
 window.addEventListener('pointermove', e=>{ if(!dragging) return; const a=getAngle(e), da=a-lastA; lastA=a; angle+=da; rotor.style.transform=`rotate(${angle}rad)`; e.preventDefault(); }, {passive:false});
@@ -273,32 +293,36 @@ window.addEventListener('pointerup', ()=>{ if(!dragging) return; dragging=false;
 function getAngle(e){ const r=rotor.getBoundingClientRect(), cx=r.left+r.width/2, cy=r.top+r.height/2; return Math.atan2(e.clientY-cy, e.clientX-cx); }
 function snap(){ const n=items.length, seg=(Math.PI*2)/n; let a=((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI); let idx=Math.round(((Math.PI*1.5)-a)/seg - 0.5); idx=((idx%n)+n)%n; const target=(Math.PI*1.5)-(idx*seg+seg/2); rotor.style.transition='transform .18s ease-out'; rotor.style.transform=`rotate(${target}rad)`; setTimeout(()=>{rotor.style.transition=''; angle=target; showModal(items[idx]);},180); }
 
-/* ==== MODAL ==== */
+/* ========= MODAL ========= */
 function openModal(){ savedScrollY=scrollY; document.body.classList.add('modal-open'); document.body.style.top=`-${savedScrollY}px`; modal.classList.add('is-open'); modal.setAttribute('aria-hidden','false'); halo.style.opacity=.35; }
 function closeModal(){ modal.classList.remove('is-open'); modal.setAttribute('aria-hidden','true'); document.body.classList.remove('modal-open'); document.body.style.top=''; halo.style.opacity=''; scrollTo(0,savedScrollY); }
-$('.modal__backdrop').addEventListener('click', closeModal); mClose.addEventListener('click', closeModal); mExit.addEventListener('click', closeModal);
+document.querySelector('.modal__backdrop').addEventListener('click', closeModal);
+mClose.addEventListener('click', closeModal); mExit.addEventListener('click', closeModal);
 function showModal(a){ mTitle.textContent=a.title; mMeta.textContent=`${a.dur} · ${a.meta}`; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; openModal(); }
 
-/* ==== MODE ==== */
+/* ========= MODE ========= */
 function setMode(m){
   if(mode===m) return; mode=m; items=[...DATA[m]];
-  bg.className='bg '+(m==='sun'?'sun':'moon');
-  halo.className='halo '+(m==='sun'?'sun':'moon');
+  bg.className = m; halo.className = 'halo ' + (m==='sun'?'sun':'moon');
   pSun.style.display = (m==='sun')?'block':'none';
   pMoon.style.display = (m==='moon')?'block':'none';
   tabSun.classList.toggle('off', m!=='sun'); tabSun.setAttribute('aria-selected', m==='sun');
   tabMoon.classList.toggle('off', m!=='moon'); tabMoon.setAttribute('aria-selected', m==='moon');
-  drawWheel(); rotor.style.transform=`rotate(${angle}rad)`; // garde l’angle visuel
+  drawWheel(); rotor.style.transform=`rotate(${angle}rad)`;
 }
 tabSun.addEventListener('click', ()=>setMode('sun'));
 tabMoon.addEventListener('click', ()=>setMode('moon'));
 
-/* ==== INIT ==== */
-window.addEventListener('DOMContentLoaded', ()=>{ // purge vieux labels DOM éventuels
+/* ========= INIT ========= */
+window.addEventListener('load', ()=>{
+  // purge d’éventuels vieux labels DOM hérités d’anciennes versions
   document.querySelectorAll('.segLabel,.label,.wheel-label').forEach(n=>n.remove());
-  sizeWheel(); startParticles(); rotor.style.transform=`rotate(${angle}rad)`;
+  sizeWheel(); drawWheel();  // roue prête
+  fitParticles(pSun); fitParticles(pMoon); startParticles(); // ambiance
+  rotor.style.transform=`rotate(${angle}rad)`;
 });
-document.getElementById('wheelWrap').addEventListener('gesturestart', e=>e.preventDefault()); // bloque pinch-zoom iOS
+// bloque pinch iOS dans la zone
+document.getElementById('wheelWrap').addEventListener('gesturestart', e=>e.preventDefault());
 </script>
 </body>
 </html>
