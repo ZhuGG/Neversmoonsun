@@ -2,246 +2,519 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
-<title>Roue Soleil/Lune — Nevers (stabilisée)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Roue Soleil/Lune – Nevers</title>
 <style>
-:root{
-  --ink:#f6f8ff; --muted:#b9c6dd; --stroke:rgba(255,255,255,.16);
-  --glass:rgba(255,255,255,.10); --glass2:rgba(255,255,255,.05);
-  --bg1:#0a0f1d; --bg2:#0b1429; --violet:#8b7cff; --violetDeep:#6b5bff;
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-html,body{overscroll-behavior:none} /* évite pull-to-refresh */
-body{margin:0;color:var(--ink);font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,Inter,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2) 55%,var(--bg1));-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  :root{
+    --ink:#eef1f7; --muted:#b9c2d6;
+    --bg:#0b0f1a;
+    --haloSun1:#FFCF7A; --haloSun2:#FF9F6C;
+    --haloMoon1:#9CC8FF; --haloMoon2:#A38CFF;
+    --pointer:#6f4aff; /* violet bien visible */
+    --card: rgba(255,255,255,.10); --stroke: rgba(255,255,255,.20);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  html,body{overscroll-behavior:none;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,Inter,Segoe UI,Roboto,system-ui,Arial}
+  body.modal-open{position:fixed;left:0;right:0;width:100%} /* scroll-lock */
 
-/* ---------- Fonds (PNG 816×1456) + transition douce ---------- */
-body::before, body::after{content:"";position:fixed;inset:0;z-index:-3;pointer-events:none;background-size:cover;background-position:center;transition:opacity 900ms ease}
-body::before{opacity:1;background-image:url("assets/bg_sun.png")}
-body::after{opacity:0;background-image:url("assets/bg_moon.png")}
-body[data-mode="moon"]::before{opacity:0}
-body[data-mode="moon"]::after{opacity:1}
+  /* --- Layers / Stage --- */
+  .stage{position:relative; min-height:100dvh; display:flex; flex-direction:column; gap:12px; padding:12px 12px 22dvh; touch-action:none}
+  .bg{position:fixed; inset:0; z-index:-3; background:#0b0f1a center/cover no-repeat}
+  .bg.sun{background-image:url(assets/bg_sun.png)}
+  .bg.moon{background-image:url(assets/bg_moon.png)}
+  .particles{position:fixed; inset:0; z-index:-1; pointer-events:none} /* derrière la roue, au-dessus du bg */
 
-/* overlay lever/coucher léger */
-#dawnDusk{position:fixed;inset:0;pointer-events:none;z-index:-2;background:radial-gradient(120% 100% at 50% 120%, rgba(255,200,80,.22), rgba(0,0,0,0));opacity:.12;transition:opacity 900ms ease}
-body[data-mode="moon"] #dawnDusk{opacity:.22}
+  /* Header / Tabs */
+  .tabs{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:10; display:flex; gap:8px}
+  .tab{padding:9px 16px; border-radius:999px; backdrop-filter: blur(12px);
+       background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08));
+       border:1px solid var(--stroke); font-weight:800; color:#101425; cursor:pointer; user-select:none}
+  .tab.off{color:#e6ebff; opacity:.65}
 
-.app{min-height:100dvh;padding:12px 16px 18dvh;display:flex;flex-direction:column;gap:10px}
-.header{display:flex;align-items:center;gap:12px;justify-content:center}
-.tab{padding:8px 14px;border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,.08);font-weight:800;cursor:pointer;user-select:none}
-.tab[aria-pressed="true"]{background:linear-gradient(145deg,#fff6d6,#ffe3a7 45%,#cfe6ff);color:#0b0f1f}
+  /* Wheel */
+  .wheel-wrap{
+    position:relative; width:min(92vw,560px); aspect-ratio:1/1; margin:70px auto 0;
+    z-index:2; /* au-dessus des particules */
+    transform:translateZ(0);
+  }
+  .wheel-rotor{ /* on anime CE conteneur */
+    position:absolute; inset:0; transform:rotate(0deg); will-change:transform;
+  }
+  .wheel-canvas{position:absolute; inset:0}
+  .wheel-mask{position:absolute; inset:0; border-radius:50%; overflow:hidden; pointer-events:none}
+  .wheel-skin{position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:.9} /* optionnel */
+  .wheel-border{
+    position:absolute; inset:-4%; border-radius:50%;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255,255,255,.15), transparent 62%),
+      radial-gradient(circle at 50% 50%, rgba(0,0,0,.6), transparent 68%);
+    box-shadow: inset 0 0 0 7px rgba(0,0,0,.55);
+    pointer-events:none;
+  }
+  .halo{ /* anneau lumineux au-dessus des segments */
+    position:absolute; inset:-6%; border-radius:50%;
+    filter:blur(16px) saturate(120%); opacity:.62; mix-blend-mode:screen;
+    mask: radial-gradient(circle at 50% 50%, transparent 54%, #000 56%, #000);
+    animation: spinHalo 18s linear infinite;
+    pointer-events:none; z-index:3;
+  }
+  .halo.sun{background:conic-gradient(from 0deg, var(--haloSun1), var(--haloSun2), var(--haloSun1))}
+  .halo.moon{background:conic-gradient(from 0deg, var(--haloMoon1), var(--haloMoon2), var(--haloMoon1))}
+  @keyframes spinHalo{to{transform:rotate(360deg)}}
 
-/* ---------- SCÈNE ---------- */
-.stage{position:relative;width:min(92vw,580px);margin:8px auto 0;aspect-ratio:1/1;touch-action:none} /* bloque scroll/zoom pendant l'interaction */
-.pointer{position:absolute;top:-2px;left:50%;translate:-50% 0;z-index:7;width:40px;height:40px;background: radial-gradient(circle at 60% 40%, var(--violet), var(--violetDeep));-webkit-mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;mask:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><path d="M22 0 C34 10 34 34 22 44 C10 34 10 10 22 0Z"/></svg>') center/contain no-repeat;filter: drop-shadow(0 12px 22px rgba(0,0,0,.55))}
-.pointer::after{content:"";position:absolute;inset:-12px;border-radius:999px;box-shadow:0 0 22px 8px rgba(139,124,255,.35)}
+  .pointer{
+    position:absolute; top:-6px; left:50%; transform:translate(-50%,0);
+    width:24px; height:38px; z-index:5; pointer-events:none;
+    background: radial-gradient(circle at 50% 60%, #8c76ff, #6f4aff 60%, #5130df 100%);
+    -webkit-clip-path: path("M12 0 C18 8 18 30 12 38 C6 30 6 8 12 0 Z");
+            clip-path: path("M12 0 C18 8 18 30 12 38 C6 30 6 8 12 0 Z");
+    filter: drop-shadow(0 8px 10px rgba(0,0,0,.5));
+  }
+  .hub{
+    position:absolute; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:26%; aspect-ratio:1/1; border-radius:50%; z-index:6;
+    display:grid; place-items:center; cursor:pointer;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(255,255,255,.8), rgba(255,255,255,.55) 55%, rgba(255,255,255,.2) 70%, rgba(255,255,255,.05) 100%),
+      linear-gradient(145deg, rgba(255,255,255,.65), rgba(255,255,255,.25));
+    box-shadow: 0 16px 40px rgba(0,0,0,.45), inset 0 2px 8px rgba(255,255,255,.85);
+  }
+  .hub:active{scale:.98}
+  .hub::after{ /* petit disque central */
+    content:""; width:62%; aspect-ratio:1/1; border-radius:50%;
+    background:radial-gradient(circle at 50% 45%, rgba(255,255,255,.95), rgba(255,255,255,.6));
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.12);
+  }
 
-/* Wrap tournant (GPU) */
-#wheelWrap{position:relative;width:100%;height:100%;transform-origin:50% 50%;will-change:transform;transition: transform 3.2s cubic-bezier(.12,.6,0,1);contain: layout paint size}
+  /* Modal */
+  .modal{display:none}
+  .modal.is-open{display:block}
+  .modal__backdrop{position:fixed; inset:0; background:rgba(10,12,20,.4); backdrop-filter: blur(6px); z-index:4000}
+  .modal__sheet{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.98);
+    width:min(92vw,640px); border-radius:18px; padding:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.08));
+    border:1px solid rgba(255,255,255,.25);
+    box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.3);
+    display:grid; gap:10px; z-index:4001; opacity:0; transition:.25s;
+  }
+  .modal.is-open .modal__sheet{opacity:1; transform:translate(-50%,-50%) scale(1)}
+  .row{display:flex; align-items:center; gap:10px; justify-content:space-between}
+  .pill{padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.25); background:rgba(255,255,255,.12); font-weight:700}
+  .x{border:none; background:transparent; color:#fff; font-size:20px; cursor:pointer}
+  .btns{display:flex; gap:10px}
+  .btn{flex:1; padding:12px; border-radius:12px; text-align:center; font-weight:800; color:#0d1122; text-decoration:none; border:0; cursor:pointer;
+       box-shadow:0 8px 22px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.7)}
+  .go{background:linear-gradient(145deg,#cfe3ff,#9ec7ff)}
+  .close{background:linear-gradient(145deg,#ffe1a8,#ffc07a)}
 
-/* Halo autour de la roue */
-#halo{position:absolute;inset:-6%;border-radius:999px;z-index:6;pointer-events:none;opacity:.65;filter:blur(16px) saturate(120%);-webkit-mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%);mask: radial-gradient(circle at 50% 50%, #000 48%, transparent 52%);} body.modal-open #halo{opacity:.35} /* atténue sous popup */
-#halo.sun{background:conic-gradient(from 0deg, rgba(255,210,110,.18), rgba(255,170,60,.28), rgba(255,240,170,.18), rgba(255,210,110,.18));animation:haloSpin 16s linear infinite}
-#halo.moon{background:conic-gradient(from 0deg, rgba(180,190,255,.18), rgba(120,110,255,.28), rgba(220,230,255,.12), rgba(180,190,255,.18));animation:haloSpin 22s linear infinite}
-@keyframes haloSpin{to{transform:rotate(360deg)}}
-
-/* Calques wheel */
-#wheelSkin{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:contain;user-select:none;pointer-events:none;z-index:1;opacity:.92}
-#wheelCanvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;z-index:5;background:transparent} body.modal-open .pointer, body.modal-open .hub{opacity:.15;filter:blur(1px)}
-
-/* Hub (bouton central) */
-.hub{position:absolute;top:50%;left:50%;translate:-50% -50%;width:20%;aspect-ratio:1/1;border-radius:999px;background: radial-gradient(circle at 50% 40%, #ffffff, #f3f6ff 60%, #e5ecff);box-shadow: 0 14px 26px rgba(0,0,0,.45), inset 0 2px 0 rgba(255,255,255,.8);display:grid;place-items:center;z-index:7}
-#spin{appearance:none;border:none;cursor:pointer;border-radius:999px;width:72%;aspect-ratio:1/1;background: radial-gradient(circle at 50% 45%, #ffffff, #f7f7ff 60%, #e6eaff);box-shadow: inset 0 1px 0 rgba(255,255,255,.8);transition: transform .18s ease}
-#spin:active{transform:scale(.97)}
-
-/* ---------- MODAL (scroll-lock pro) ---------- */
-#modalRoot{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);display:none;z-index:5000} /* au-dessus de tout */
-#modalRoot.show{display:block}
-.modal{position:fixed;inset:0;display:none} .modal.show{display:block} /* évite le flou au chargement */
-.backdrop{position:fixed;inset:0;background:rgba(6,10,20,.5);backdrop-filter: blur(8px)}
-.sheet{position:relative;width:min(680px,92vw);border-radius:22px;padding:18px 16px;background:radial-gradient(120% 120% at 20% 0%, rgba(255,255,255,.22), rgba(255,255,255,.08) 55%), linear-gradient(160deg,var(--glass),var(--glass2));border:1px solid var(--stroke);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.2);animation:scaleIn .24s ease forwards;opacity:0}
-@keyframes scaleIn{to{opacity:1;transform:none}}
-.sheet h3{margin:0 0 6px;font-size:20px}
-.details{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start}
-.badge{padding:4px 8px;border-radius:999px;border:1px solid var(--stroke);background:rgba(255,255,255,.08);font-weight:700}
-.meta{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted)}
-.sheet .actions{display:flex;gap:8px;margin-top:10px}
-.sheet .btn{flex:1;padding:12px;border-radius:12px;text-align:center;font-weight:900;color:#0b0f1f;text-decoration:none;border:0;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.6)}
-.sheet .go{background: linear-gradient(145deg,#cfe6ff,#9bc9ff)}
-.sheet .close{background: linear-gradient(145deg,#ffe3a7,#ffbd7c)}
-.close-x{position:absolute;top:10px;right:10px;border:0;background:transparent;color:#fff;font-size:22px;opacity:.8;cursor:pointer}
-.sheet{padding-bottom:calc(18px + env(safe-area-inset-bottom))}
-
-/* ---------- PARTICLES canvases ---------- */
-#sparks,#stars{position:fixed;inset:0;pointer-events:none;z-index:-1;mix-blend-mode:screen} /* ambiance derrière la scène */
-
-@media (prefers-reduced-motion: reduce){ #wheelWrap{transition:none!important} }
+  /* A11y reduced motion */
+  @media (prefers-reduced-motion:reduce){
+    .halo{animation:none}
+    .wheel-rotor{transition:none!important}
+  }
 </style>
 </head>
 <body>
-<div id="dawnDusk"></div>
-<div class="app" id="app">
-  <div class="header" role="group" aria-label="Choix du set">
-    <button id="tabSun" class="tab" aria-pressed="true">Soleil</button>
-    <button id="tabMoon" class="tab" aria-pressed="false">Lune</button>
-  </div>
+  <!-- Backgrounds -->
+  <div id="bg" class="bg sun" aria-hidden="true"></div>
+  <!-- Particles canvases -->
+  <canvas id="pSun" class="particles" aria-hidden="true"></canvas>
+  <canvas id="pMoon" class="particles" aria-hidden="true" style="display:none"></canvas>
 
   <div class="stage" id="stage">
-    <div class="pointer" aria-hidden="true"></div>
-    <div id="wheelWrap">
-      <div id="halo" class="sun"></div>
-      <img id="wheelSkin" alt="skin de la roue" src="assets/wheel_sun.png" />
-      <canvas id="wheelCanvas" aria-label="Roue de sélection"></canvas>
+    <!-- Tabs -->
+    <div class="tabs" role="tablist" aria-label="Mode">
+      <button id="tabSun" class="tab" role="tab" aria-selected="true">Soleil</button>
+      <button id="tabMoon" class="tab off" role="tab" aria-selected="false">Lune</button>
     </div>
-    <div class="hub"><button id="spin" aria-label="Tourner" title="Tourner"></button></div>
-  </div>
-</div>
 
-<!-- Modal résultat (popup) : centré en fixed, avec scroll-lock pro -->
-<div id="modalRoot">
-  <div class="sheet">
-    <button class="close-x" id="closex" aria-label="Fermer">×</button>
-    <div class="details"><h3 id="mTitle"></h3><span id="mBadge" class="badge">Soleil</span></div>
-    <div class="meta"><span id="mDuration"></span>· <span id="mTip"></span></div>
-    <p id="mDesc" style="margin:8px 0 0"></p>
-    <div class="actions">
-      <a id="mGo" class="btn go" target="_blank" rel="noopener">Itinéraire</a>
-      <button id="mClose" class="btn close">Fermer</button>
+    <!-- Wheel -->
+    <div class="wheel-wrap" id="wheelWrap" aria-live="polite">
+      <div class="wheel-border" aria-hidden="true"></div>
+
+      <!-- halo -->
+      <div id="halo" class="halo sun" aria-hidden="true"></div>
+
+      <div id="rotor" class="wheel-rotor">
+        <div class="wheel-mask"><!-- mask ensures nothing déborde --></div>
+        <canvas id="wheel" class="wheel-canvas" aria-label="Roue"></canvas>
+        <!-- Optionnel : skin décoratif par-dessus les segments -->
+        <!-- <img src="assets/wheel_skin.png" class="wheel-skin" alt="" aria-hidden="true"> -->
+      </div>
+
+      <div class="pointer" aria-hidden="true"></div>
+      <button id="hub" class="hub" aria-label="Tourner"></button>
     </div>
   </div>
-</div>
-<div class="modal" id="modalBackdrop" aria-hidden="true"><div id="backdrop" class="backdrop"></div></div>
 
-<!-- Particules / étoiles -->
-<canvas id="sparks"></canvas>
-<canvas id="stars"></canvas>
+  <!-- Modal -->
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal__backdrop"></div>
+    <div class="modal__sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+      <div class="row">
+        <div style="font-weight:900; font-size:20px" id="mTitle">Titre activité</div>
+        <div style="display:flex; align-items:center; gap:8px">
+          <div id="mBadge" class="pill">Soleil</div>
+          <button class="x" id="mClose" aria-label="Fermer">×</button>
+        </div>
+      </div>
+      <div style="color:var(--muted)" id="mMeta">Durée · Ambiance</div>
+      <div id="mDesc">Description détaillée.</div>
+      <div class="btns">
+        <a id="mGo" class="btn go" target="_blank" rel="noopener">Itinéraire</a>
+        <button id="mExit" class="btn close">Fermer</button>
+      </div>
+    </div>
+  </div>
 
 <script>
-/* ========= ASSETS =========
-- bg_sun.png / bg_moon.png → 816×1456 (portrait)
-- wheel_sun.png / wheel_moon.png → 1024×1024, transparent
-================================ */
+/* ===================== DATA ===================== */
+const DATA = {
+  sun: [
+    {label:"VieuxPort", title:"Îlots et passerelles du Vieux-Port", dur:"1 h", meta:"Nature", desc:"Mini‑îles sauvages, herbes hautes, vue sur Nevers. Parfait en fin d’aprem.", maps:"Port de la Jonction Nevers"},
+    {label:"Kiosque", title:"Sieste musicale — parc Salengro", dur:"45 min", meta:"Chill", desc:"Herbe fraîche + livre. Ombre et eau à proximité.", maps:"Parc Roger-Salengro Nevers"},
+    {label:"Vitraux", title:"Vitraux contemporains", dur:"40 min", meta:"Frais", desc:"Dans la cathédrale : colorimétrie moderne, faisceaux lumineux au sol.", maps:"Cathédrale Saint-Cyr-et-Sainte-Julitte Nevers"},
+    {label:"Panorama", title:"Belvédère du Bec d’Allier", dur:"1 h 15", meta:"Nature", desc:"Confluent Loire‑Allier. Grand air, oiseaux, horizon magnifique.", maps:"Bec d'Allier panorama"},
+    {label:"Boutiques", title:"Vieilles boutiques de faïence", dur:"40 min", meta:"Patrimoine", desc:"Repérage d’enseignes historiques et vitrines anciennes.", maps:"Rue du 14 Juillet Nevers"},
+    {label:"Faïence", title:"Atelier express — faïence", dur:"1 h", meta:"Créatif", desc:"Customise une petite pièce dans un atelier du centre.", maps:"Place Carnot Nevers"},
+    {label:"Belvédères", title:"Remparts + Tour Goguin (sunset)", dur:"1 h", meta:"Photo", desc:"Balade douce jusqu’au coucher de soleil sur la Loire.", maps:"Quai des Mariniers Nevers"},
+    {label:"Polaroid", title:"Polaroid challenge", dur:"45 min", meta:"Créatif", desc:"3 spots → 3 clichés. Souvenir unique.", maps:"Place Carnot Nevers"}
+  ],
+  moon: [
+    {label:"Nocturne", title:"Fil Bleu — secrets", dur:"45 min", meta:"Urbain", desc:"Version détails cachés du parcours nocturne en ville.", maps:"Palais ducal de Nevers"},
+    {label:"Cinéma", title:"Séance Art & Essai", dur:"2 h", meta:"Frais", desc:"Film indé en VO si possible. Salle climatisée.", maps:"Cinéma à Nevers"},
+    {label:"Cave", title:"Cave/bistrot de poche", dur:"1 h", meta:"Soirée", desc:"Un verre intimiste dans une micro‑adresse locale.", maps:"bar à vin centre Nevers"},
+    {label:"StreetArt", title:"Street‑art discret", dur:"45 min", meta:"Underground", desc:"Pochoirs, collages et fresques de poche.", maps:"Place Carnot Nevers"},
+    {label:"Glyphe", title:"Glyphe mystère", dur:"30 min", meta:"Curiosité", desc:"Petite chasse à un symbole gravé dans la pierre.", maps:"Centre historique Nevers"},
+    {label:"Fresque", title:"Fresque XXL cachée", dur:"30 min", meta:"Photo", desc:"Repère une grande fresque discrète en nocturne.", maps:"Centre ancien Nevers"},
+    {label:"Étoiles", title:"Observatoire improvisé", dur:"40 min", meta:"Ciel clair", desc:"Regarde les constellations depuis un point sombre en bord de Loire.", maps:"Bec d'Allier panorama"}
+  ]
+};
 
-/* ===================== Données ===================== */
-const SUN=[
- {id:"vieuxport",label:"VieuxPort",title:"Îlots & passerelles",dur:"1 h",tip:"Golden hour",desc:"Micro‑îles sur la Loire, passerelles en bois et bancs cachés. Parfait pour photos d’eau peu profonde.",maps:"Port de la Jonction Nevers"},
- {id:"goguin",label:"Remparts",title:"Remparts + Tour Goguin",dur:"1 h 15",tip:"Coucher de soleil",desc:"Balade panoramique le long des remparts jusqu’à la tour. Pierres chaudes, coins ombragés.",maps:"Quai des Mariniers Nevers"},
- {id:"bec",label:"BecAllier",title:"Belvédère du Bec d’Allier",dur:"1 h 30",tip:"Pique‑nique",desc:"Confluent Loire/Allier : vues XXL, oiseaux, sable blond. Vent léger et horizon superbe.",maps:"Bec d'Allier panorama"},
- {id:"faience",label:"Faïence",title:"Atelier express faïence",dur:"1 h",tip:"Créatif",desc:"Peins un motif (bol/aimant). Découvre les bleus nivernais. Retrait rapide en boutique.",maps:"Place Carnot Nevers"},
- {id:"textures",label:"Textures",title:"Safari textures",dur:"1 h",tip:"Photo macro",desc:"Chasse aux détails : portes cloutées, fers forgés, carreaux vernissés.",maps:"Rue François Mitterrand Nevers"},
- {id:"kiosque",label:"Kiosque",title:"Sieste musicale",dur:"45 min",tip:"Calme",desc:"Parc Salengro : herbe fraîche, kiosque rétro, canards en fond sonore.",maps:"Parc Roger-Salengro Nevers"},
- {id:"panorama",label:"Panorama",title:"Quai haut — Loire 360°",dur:"40 min",tip:"Vue large",desc:"Promenade surélevée, vues sur ponts et cours d’eau. Couleurs chaudes en fin d’aprèm.",maps:"Pont de Loire Nevers"},
- {id:"faience2",label:"Boutiques",title:"Vieilles boutiques faïence",dur:"50 min",tip:"Vitrines",desc:"Enseignes peintes, vitrines anciennes. Balade très instagrammable.",maps:"Rue du 14 Juillet Nevers"},
- {id:"toits",label:"Belvédères",title:"Points hauts photo",dur:"45 min",tip:"Silhouettes",desc:"Escaliers des remparts → lignes de toits & Loire. Spots secrets contre‑jour.",maps:"Promenade des Remparts Nevers"},
- {id:"vitreaux",label:"Vitraux",title:"Vitraux contemporains",dur:"40 min",tip:"Frais",desc:"Dans la cathédrale : colorimétrie moderne, faisceaux lumineux au sol.",maps:"Cathédrale de Nevers"},
- {id:"polaroid",label:"Polaroid",title:"Polaroid challenge",dur:"45 min",tip:"Jeu",desc:"3 lieux / 3 clichés : façade, reflet d’eau, détail minuscule.",maps:"Place Carnot Nevers"},
- {id:"marche",label:"Marché",title:"Marché & dégustation",dur:"1 h",tip:"Local",desc:"Halles : fromages, charcut’ locale, brioches nivernaises.",maps:"Halles de Nevers"}
-];
-const MOON=[
- {id:"filbleu",label:"FilBleu",title:"Fil Bleu nocturne",dur:"1 h 15",tip:"QR/monuments",desc:"Balises lumineuses + QR : anecdotes, façades, cours intérieures. Ambiance ciné.",maps:"Palais ducal de Nevers"},
- {id:"bernadette",label:"Bernadette",title:"Crypte & châsse",dur:"40 min",tip:"Frais",desc:"Silence, pierre fraîche, orfèvrerie fine. Lieu singulier.",maps:"Espace Bernadette Nevers"},
- {id:"street",label:"StreetArt",title:"Street‑art discret",dur:"45 min",tip:"Chasse",desc:"Pochoirs, micro‑collages, frises typo dans les ruelles.",maps:"Place Carnot Nevers"},
- {id:"cave",label:"Cave",title:"Cave/bistrot de poche",dur:"1 h",tip:"Intime",desc:"Verre de terroir dans une mini‑adresse confidentielle. Lumière tamisée.",maps:"bar à vin centre Nevers"},
- {id:"cinema",label:"Cinéma",title:"Séance Art & Essai",dur:"2 h",tip:"VO",desc:"Film d’auteur si possible en VO. Petite salle au charme rétro.",maps:"Cinéma à Nevers"},
- {id:"bleu2",label:"Bleu+QR",title:"Fil Bleu — secrets",dur:"1 h",tip:"Détails",desc:"On débusque les mascarons, heurtoirs, blasons.",maps:"Palais ducal de Nevers"},
- {id:"horloges",label:"Cadrans",title:"Chasse aux cadrans",dur:"45 min",tip:"Typo",desc:"Horloges oubliées, enseignes en fer et numéros gravés.",maps:"Centre historique Nevers"},
- {id:"glyphe",label:"Glyphe",title:"Glyphe mystère",dur:"30 min",tip:"Indice",desc:"Un symbole gravé à retrouver… puis selfie !",maps:"Rue Saint-Martin Nevers"},
- {id:"etoiles",label:"Étoiles",title:"Observatoire spontané",dur:"40 min",tip:"Ciel clair",desc:"Bord de Loire sombre, ciel souvent limpide.",maps:"Quai des Mariniers Nevers"},
- {id:"fresque",label:"Fresque",title:"Fresque XXL cachée",dur:"30 min",tip:"Wahou",desc:"Une façade entière peinte à la lueur des lampadaires.",maps:"Rue du 14 Juillet Nevers"},
- {id:"nocturne",label:"Nocturne",title:"Remparts de nuit",dur:"50 min",tip:"Tranquille",desc:"Pierres chaudes, reflets sur la Loire et peu de monde.",maps:"Promenade des Remparts Nevers"},
- {id:"belved",label:"Belvédère",title:"Point haut nocturne",dur:"35 min",tip:"Panorama",desc:"Vue de toit avec halos urbains. Parfait pour conclure.",maps:"Escaliers des remparts Nevers"}
-];
+/* ===================== STATE ===================== */
+let mode = 'sun'; // 'sun' | 'moon'
+let items = [...DATA[mode]];
+let angle = 0; // angle courant (rad)
+let spinning = false;
+let savedScrollY = 0;
 
-/* ===================== État & refs ===================== */
-const MAX_SEG=12; let mode='sun'; let pool=[...SUN]; let currentSet=shuffle(pool).slice(0,MAX_SEG);
-const wheelWrap=$('#wheelWrap'); const wheel=$('#wheelCanvas'); const skin=$('#wheelSkin'); const halo=$('#halo');
-const ctx=wheel.getContext('2d'); const spinBtn=$('#spin');
-const modalRoot=$('#modalRoot'); const mTitle=$('#mTitle'); const mDesc=$('#mDesc'); const mGo=$('#mGo'); const mClose=$('#mClose'); const closex=$('#closex'); const mBadge=$('#mBadge'); const mDuration=$('#mDuration'); const mTip=$('#mTip'); const modalBackdrop=$('#modalBackdrop'); const backdrop=$('#backdrop');
-const canvasSparks=$('#sparks'); const sctx=canvasSparks.getContext('2d');
-const canvasStars=$('#stars'); const tctx=canvasStars.getContext('2d');
-let baseDeg=0, spinning=false, drag=false, dragStart=0, startAngle=0, lastAngle=0, lastTime=0, velocity=0, savedScrollY=0;
+/* ===================== ELEMENTS ===================== */
+const bg = document.getElementById('bg');
+const tabSun = document.getElementById('tabSun');
+const tabMoon = document.getElementById('tabMoon');
 
-function $(sel){return document.querySelector(sel)}
-function shuffle(a){a=[...a]; for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]];} return a}
+const rotor = document.getElementById('rotor');
+const wheel = document.getElementById('wheel');
+const halo = document.getElementById('halo');
+const hub = document.getElementById('hub');
 
-/* ===================== Canvas sizing DPI-proof ===================== */
-function dprCap(){ return Math.min(2, Math.max(1, Math.round((devicePixelRatio||1)*100)/100)); }
-function sizeCanvas(){ const rect=wheel.getBoundingClientRect(); const w=Math.max(1,rect.width), h=Math.max(1,rect.height); const dpr=dprCap(); wheel.width=Math.round(w*dpr); wheel.height=Math.round(h*dpr); wheel.style.width=w+'px'; wheel.style.height=h+'px'; ctx.setTransform(dpr,0,0,dpr,0,0); fitParticleCanvases(); }
-function fitParticleCanvases(){ const dpr=dprCap(); [canvasSparks,canvasStars].forEach(cv=>{ cv.width=innerWidth*dpr; cv.height=innerHeight*dpr; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }); }
+const modal = document.getElementById('modal');
+const mTitle = document.getElementById('mTitle');
+const mMeta  = document.getElementById('mMeta');
+const mDesc  = document.getElementById('mDesc');
+const mGo    = document.getElementById('mGo');
+const mBadge = document.getElementById('mBadge');
+const mClose = document.getElementById('mClose');
+const mExit  = document.getElementById('mExit');
 
-/* ===================== Util: luminance du segment ===================== */
-function darken(hex,amt){ const n=parseInt(hex.slice(1),16); let r=(n>>16)-amt,g=((n>>8)&255)-amt,b=(n&255)-amt; r=Math.max(0,r); g=Math.max(0,g); b=Math.max(0,b); return '#'+(r<<16|g<<8|b).toString(16).padStart(6,'0').toUpperCase(); }
-function luminance(hex){ const n=parseInt(hex.slice(1),16); let r=(n>>16)/255,g=((n>>8)&255)/255,b=(n&255)/255; [r,g,b]=[r,g,b].map(v=> v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4)); return 0.2126*r+0.7152*g+0.0722*b; }
+const pSun = document.getElementById('pSun');
+const pMoon = document.getElementById('pMoon');
 
-/* ===================== Dessin (segments + labels) ===================== */
-function drawWheel(){ sizeCanvas(); const rect=wheel.getBoundingClientRect(); const w=rect.width, h=rect.height; const r=Math.min(w,h)/2, cx=w/2, cy=h/2; ctx.clearRect(0,0,w,h); ctx.save(); ctx.translate(cx,cy);
-  // Bord épais
-  ctx.beginPath(); ctx.arc(0,0,r-8,0,Math.PI*2); ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=18; ctx.stroke();
-  const palSun=['#FFE6B3','#FFD3A3','#FFC6C6','#F7B8D9','#E6C7FF','#CFE2FF','#CFF4F3','#E1F7E9'];
-  const palMoon=['#B3D9FF','#C0E7FF','#C9F1FF','#CFEAF6','#E1E0FF','#D9C8FF','#F0D6FF','#FFD9F0'];
-  const pal=(mode==='sun')?palSun:palMoon; const n=currentSet.length, seg=2*Math.PI/n;
-  // Clip dans le disque
-  ctx.save(); ctx.beginPath(); ctx.arc(0,0,r-2,0,Math.PI*2); ctx.clip();
+/* ===================== GEOMETRY & DRAW ===================== */
+let DPR = Math.min(2, Math.round(window.devicePixelRatio || 1));
+function resizeWheel(){
+  const rect = wheel.getBoundingClientRect();
+  wheel.width  = Math.floor(rect.width  * DPR);
+  wheel.height = Math.floor(rect.height * DPR);
+  drawWheel();
+}
+window.addEventListener('resize', resizeWheel);
+window.addEventListener('orientationchange', ()=>setTimeout(resizeWheel, 150));
+
+function pastelPaletteSun(i,n){
+  // teintes douces soleil (jaunes/roses/verts)
+  const hues = [35, 18, 340, 310, 200, 160, 90, 55];
+  const h = hues[i%hues.length];
+  return `hsla(${h}, 70%, 75%, 0.78)`; // translucide : 0.78
+}
+function pastelPaletteMoon(i,n){
+  // teintes douces lune (bleus/violacés)
+  const hues = [210, 230, 255, 275, 295, 175, 195];
+  const h = hues[i%hues.length];
+  return `hsla(${h}, 55%, 72%, 0.78)`;
+}
+function textColorFor(hslString){
+  // simple luminance proxy : si L% > 60 => sombre; sinon clair
+  const m = hslString.match(/hsla?\((\d+),\s*([\d.]+)%?,\s*([\d.]+)%?/i);
+  if(!m) return '#1b2033';
+  const L = parseFloat(m[3]);
+  return (L>60) ? '#1b2033' : '#f8fbff';
+}
+function drawWheel(){
+  const ctx = wheel.getContext('2d');
+  const W = wheel.width, H = wheel.height, r = Math.min(W,H)/2;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  ctx.save();
+  ctx.translate(W/2, H/2);
+  // border inside (clair)
+  ctx.beginPath(); ctx.arc(0,0,r*0.98,0,Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = Math.max(2, r*0.02);
+  ctx.stroke();
+
+  const active = items;
+  const n = active.length;
+  const seg = (Math.PI*2)/n;
+
   for(let i=0;i<n;i++){
-    const start=i*seg, end=start+seg, mid=(start+end)/2, col=pal[i%pal.length];
-    const g=ctx.createLinearGradient(0,0, Math.cos(mid)*r, Math.sin(mid)*r); g.addColorStop(0,col); g.addColorStop(1,darken(col,10));
-    // Segment translucide pour révéler le skin
-    ctx.save(); ctx.globalAlpha=0.78; ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,r-22,start,end); ctx.closePath(); ctx.fillStyle=g; ctx.fill(); ctx.restore();
-    // séparateur fin
-    ctx.strokeStyle='rgba(255,255,255,.45)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(0,0,r-22,end,end); ctx.stroke();
-    // Label tangent — auto-contraste
-    const lx=Math.cos(mid)*(r*0.60), ly=Math.sin(mid)*(r*0.60); ctx.save(); ctx.translate(lx,ly); ctx.rotate(mid); ctx.font='16px ui-sans-serif,system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.shadowColor='rgba(0,0,0,.22)'; ctx.shadowBlur=2; ctx.shadowOffsetY=1; const fill = (luminance(col)>0.7)? '#333842' : darken(col,55); ctx.fillStyle=fill; ctx.fillText(currentSet[i].label,0,0); ctx.restore();
+    const start = i*seg, end = start+seg;
+    // fill
+    const col = (mode==='sun')? pastelPaletteSun(i,n) : pastelPaletteMoon(i,n);
+    ctx.beginPath(); ctx.moveTo(0,0);
+    ctx.arc(0,0,r*0.86, start, end); ctx.closePath();
+    ctx.fillStyle = col; ctx.fill();
+
+    // separator
+    ctx.beginPath();
+    ctx.arc(0,0,r*0.86, end, end);
+    ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = Math.max(1, r*0.008);
+    ctx.stroke();
+
+    // label
+    const mid = start + seg/2;
+    const lx = Math.cos(mid) * r*0.58;
+    const ly = Math.sin(mid) * r*0.58;
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(mid);
+    const txt = active[i].label;
+    // pill bg
+    const padX = 14*DPR, padY = 8*DPR;
+    ctx.font = `${14*DPR}px Inter, system-ui, -apple-system`;
+    const tw = ctx.measureText(txt).width;
+    const pw = tw + padX*2, ph = 30*DPR;
+    // halo doux au lieu d'un stroke
+    ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = 8*DPR; ctx.shadowOffsetY = 2*DPR;
+    ctx.fillStyle = 'rgba(255,255,255,.92)';
+    roundRect(ctx, -pw/2, -ph/2, pw, ph, 999); ctx.fill();
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = textColorFor(col);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(txt, 0, 1*DPR);
+    ctx.restore();
   }
-  ctx.restore(); // fin clip
-  // Inner verre
-  ctx.beginPath(); ctx.arc(0,0,r*0.42,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.12)'; ctx.fill();
   ctx.restore();
 }
-
-/* ===================== Spin: bouton + drag inertiel ===================== */
-spinBtn.addEventListener('click', ()=> autoSpin());
-function autoSpin(){ if(spinning) return; hideModal(); const n=currentSet.length; const slice=360/n; const idx=(Math.random()*n)|0; snapToIndex(idx, /*animate*/ true); burst(); }
-
-function snapToIndex(idx, animate){
-  const n=currentSet.length; const slice=360/n; const sliceCenter=idx*slice+slice/2; const turns=5; const targetDeg=baseDeg + turns*360 + (360 - sliceCenter); spinning=true; if(!animate){ wheelWrap.style.transition='none'; }
-  requestAnimationFrame(()=>{ if(!animate){ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; }
-    wheelWrap.style.transform=`translateZ(0) rotate(${targetDeg}deg)`; wheelWrap.addEventListener('transitionend', ()=>{ baseDeg=targetDeg%360; spinning=false; showResult(currentSet[idx]); }, {once:true}); });
+function roundRect(ctx,x,y,w,h,r){
+  const rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.arcTo(x+w,y,x+w,y+h,rr);
+  ctx.arcTo(x+w,y+h,x,y+h,rr);
+  ctx.arcTo(x,y+h,x,y,rr);
+  ctx.arcTo(x,y,x+w,y,rr);
+  ctx.closePath();
 }
 
-// Drag inertiel — et snap précis à un segment pour éviter l'arrêt "entre deux"
-const wrapEl=wheelWrap; wrapEl.addEventListener('pointerdown', onDown); wrapEl.addEventListener('pointermove', onMove, {passive:false}); addEventListener('pointerup', onUp); addEventListener('pointercancel', onUp);
-function angleFromEvent(e){ const rect=wrapEl.getBoundingClientRect(); const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2; return Math.atan2(e.clientY-cy, e.clientX-cx)*180/Math.PI + 180; }
-function onDown(e){ if(spinning) return; e.preventDefault(); drag=true; wrapEl.setPointerCapture(e.pointerId); dragStart=angleFromEvent(e); startAngle=baseDeg; lastAngle=dragStart; lastTime=performance.now(); velocity=0; }
-function onMove(e){ if(!drag) return; e.preventDefault(); const a=angleFromEvent(e); const delta=a-dragStart; baseDeg=startAngle+delta; wheelWrap.style.transition='none'; wheelWrap.style.transform=`rotate(${baseDeg}deg)`; const t=performance.now(); const dt=Math.max(1,t-lastTime); velocity=(a-lastAngle)/dt*1000; lastAngle=a; lastTime=t; }
-function onUp(){ if(!drag) return; drag=false; const n=currentSet.length; const slice=360/n; // inertie simple
-  let deg = baseDeg + velocity*0.6; // + amorti
-  let norm = ((360 - (deg%360)) % 360); // 0 = pointe pile en haut
-  let idx = Math.round(norm / slice) % n; // snap au plus proche centroïde
-  snapToIndex(idx, /*animate*/ true);
+/* ===================== SPIN / DRAG ===================== */
+function spinRandom(){
+  if(spinning) return;
+  spinning = true;
+  const n = items.length;
+  const seg = (Math.PI*2)/n;
+  const targetIndex = Math.floor(Math.random()*n);
+  const targetAngle = (Math.PI*1.5) - (targetIndex*seg + seg/2); // pointer en haut
+  const turns = 4 + Math.random()*2;
+  const final = targetAngle + turns*2*Math.PI;
+  const start = performance.now(), dur = 3200 + Math.random()*1200;
+  const startAngle = angle;
+
+  requestAnimationFrame(function anim(t){
+    const p = Math.min(1, (t-start)/dur);
+    const ease = 1 - Math.pow(1-p,3);
+    const a = startAngle + (final - startAngle)*ease;
+    rotor.style.transform = `rotate(${a}rad)`;
+    if(p<1){ requestAnimationFrame(anim); }
+    else {
+      angle = ((targetAngle% (2*Math.PI))+2*Math.PI)%(2*Math.PI);
+      rotor.style.transform = `rotate(${angle}rad)`;
+      spinning=false;
+      const chosen = items[targetIndex];
+      showModal(chosen);
+      if(navigator.vibrate) navigator.vibrate([10,40,20]);
+    }
+  });
+}
+hub.addEventListener('click', spinRandom);
+
+/* (optionnel) drag inertiel minimal + snap */
+let dragging=false, lastA=0;
+rotor.addEventListener('pointerdown', e=>{
+  dragging=true; rotor.setPointerCapture(e.pointerId); lastA = getAngle(e);
+});
+window.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  const a = getAngle(e);
+  const da = a - lastA; lastA = a;
+  angle += da;
+  rotor.style.transform = `rotate(${angle}rad)`;
+  e.preventDefault();
+}, {passive:false});
+window.addEventListener('pointerup', ()=>{
+  if(!dragging) return; dragging=false;
+  snapToNearest();
+});
+function getAngle(e){
+  const rect = rotor.getBoundingClientRect();
+  const cx = rect.left + rect.width/2;
+  const cy = rect.top  + rect.height/2;
+  return Math.atan2(e.clientY - cy, e.clientX - cx);
+}
+function snapToNearest(){
+  const n = items.length, seg = (Math.PI*2)/n;
+  // angle visé = pointer haut => a = 1.5pi - (idx*seg + seg/2)
+  // on déduit idx le + proche
+  let a = ((angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  let idx = Math.round( ((Math.PI*1.5) - a)/seg - 0.5 );
+  idx = ((idx%n)+n)%n;
+  const target = (Math.PI*1.5) - (idx*seg + seg/2);
+  rotor.style.transition = 'transform .18s ease-out';
+  rotor.style.transform = `rotate(${target}rad)`;
+  setTimeout(()=>{
+    rotor.style.transition = '';
+    angle = target;
+    showModal(items[idx]);
+  }, 180);
 }
 
-/* ===================== Particules Soleil/Lune ===================== */
-function burst(){ if(mode==='sun') sparksUp(); else starDust(); }
-function sparksUp(){ const dpr=dprCap(), W=canvasSparks.width=innerWidth*dpr, H=canvasSparks.height=innerHeight*dpr; let P=[]; for(let i=0;i<44;i++){ P.push({x:W/2,y:H*0.35,vx:(Math.random()-.5)*.7*dpr,vy:-(Math.random()*1.2+.6)*dpr,r:(3+Math.random()*5)*dpr*0.5,life:60+Math.random()*30,alpha:.6}) } let f=0; (function step(){ sctx.clearRect(0,0,W,H); sctx.globalCompositeOperation='lighter'; P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.02*dpr; p.life--; p.alpha*=0.985; const g=sctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r); g.addColorStop(0,'rgba(255,243,214,'+p.alpha+')'); g.addColorStop(.5,'rgba(255,211,107,'+p.alpha+')'); g.addColorStop(1,'rgba(255,255,255,0)'); sctx.fillStyle=g; sctx.beginPath(); sctx.arc(p.x,p.y,p.r,0,Math.PI*2); sctx.fill(); }); if((f+=1)<90) requestAnimationFrame(step); else { sctx.clearRect(0,0,W,H); sctx.globalCompositeOperation='source-over'; } })(); }
-function starDust(){ const dpr=dprCap(), W=canvasStars.width=innerWidth*dpr, H=canvasStars.height=innerHeight*dpr; let P=[]; for(let i=0;i<70;i++){ P.push({x:W/2,y:H*0.35,vx:(Math.random()-.5)*.45*dpr,vy:(Math.random()-.2)*.15*dpr,r:(1+Math.random()*2)*dpr*0.6,life:90+Math.random()*40,alpha:1}) } let f=0; (function step(){ tctx.clearRect(0,0,W,H); tctx.globalCompositeOperation='lighter'; P.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.alpha*=0.982; p.life--; tctx.globalAlpha=p.alpha; tctx.fillStyle='#eae9ff'; tctx.beginPath(); tctx.arc(p.x,p.y,p.r,0,Math.PI*2); tctx.fill(); }); tctx.globalAlpha=1; if((f+=1)<110) requestAnimationFrame(step); else { tctx.clearRect(0,0,W,H); tctx.globalCompositeOperation='source-over'; } })(); }
+/* ===================== PARTICLES ===================== */
+function startParticles(){
+  setupParticleCanvas(pSun, true);
+  setupParticleCanvas(pMoon, false);
+}
+function setupParticleCanvas(canvas, isSun){
+  const dpr = DPR;
+  function resize(){
+    canvas.width  = Math.floor(innerWidth  * dpr);
+    canvas.height = Math.floor(innerHeight * dpr);
+  }
+  resize(); addEventListener('resize', resize);
+  const ctx = canvas.getContext('2d', {alpha:true});
+  let parts = [];
+  for(let i=0;i<120;i++){
+    parts.push(makeParticle(isSun));
+  }
+  function tick(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.globalCompositeOperation = 'lighter';
+    for(const p of parts){
+      p.y += p.vy; p.x += Math.sin(p.life*.03)*p.vx;
+      p.life -= 1;
+      if(isSun){
+        // or doré
+        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+        g.addColorStop(0, 'rgba(255,210,120,.55)');
+        g.addColorStop(1, 'rgba(255,170,60,.0)');
+        ctx.fillStyle = g;
+      } else {
+        // poussière d'étoiles
+        ctx.fillStyle = `rgba(210,230,255,${.35 + .25*Math.random()})`;
+      }
+      ctx.beginPath();
+      if(isSun){
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      }else{
+        ctx.rect(p.x, p.y, p.r, p.r);
+      }
+      ctx.fill();
+      if(p.life<=0 || p.y < -50*dpr || p.y > canvas.height+50*dpr){
+        // recycle
+        Object.assign(p, makeParticle(isSun));
+        p.y = isSun ? canvas.height + 20*dpr : Math.random()*canvas.height;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+}
+function makeParticle(isSun){
+  const dpr = DPR, W = Math.floor(innerWidth*dpr), H = Math.floor(innerHeight*dpr);
+  if(isSun){
+    return {
+      x: Math.random()*W, y: H + Math.random()*200*dpr,
+      vx: 0.6*dpr, vy: - (0.6 + Math.random()*1.2)*dpr,
+      r: (3 + Math.random()*7)*dpr, life: 300 + Math.random()*200
+    };
+  } else {
+    return {
+      x: Math.random()*W, y: Math.random()*H,
+      vx: 0.5*dpr, vy: (Math.random()*.4 - .2)*dpr,
+      r: (1 + Math.random()*2)*dpr, life: 240 + Math.random()*240
+    };
+  }
+}
 
-/* ===================== Tabs & transition Soleil/Lune ===================== */
-$('#tabSun').addEventListener('click', ()=> setMode('sun'));
-$('#tabMoon').addEventListener('click', ()=> setMode('moon'));
-function setMode(m){ if(mode===m) return; mode=m; document.body.dataset.mode=m; $('#tabSun').setAttribute('aria-pressed', m==='sun'); $('#tabMoon').setAttribute('aria-pressed', m==='moon'); pool=m==='sun'?[...SUN]:[...MOON]; currentSet=shuffle(pool).slice(0,MAX_SEG); skin.src=m==='sun'?'assets/wheel_sun.png':'assets/wheel_moon.png'; halo.className = m==='sun'?'sun':'moon'; wheelWrap.style.transition='none'; baseDeg=0; wheelWrap.style.transform='rotate(0deg)'; requestAnimationFrame(()=>{ wheelWrap.offsetHeight; wheelWrap.style.transition='transform 3.2s cubic-bezier(.12,.6,0,1)'; drawWheel(); }); }
+/* ===================== MODAL ===================== */
+function openModal(){ // scroll-lock pro
+  savedScrollY = window.scrollY;
+  document.body.classList.add('modal-open');
+  document.body.style.top = `-${savedScrollY}px`;
+  modal.classList.add('is-open');
+  modal.setAttribute('aria-hidden','false');
+}
+function closeModal(){
+  modal.classList.remove('is-open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.classList.remove('modal-open');
+  document.body.style.top = '';
+  window.scrollTo(0, savedScrollY);
+}
+document.querySelector('.modal__backdrop').addEventListener('click', closeModal);
+mClose.addEventListener('click', closeModal);
+mExit.addEventListener('click', closeModal);
 
-/* ===================== Modal + scroll-lock pro ===================== */
-function showResult(a){ mTitle.textContent=a.title; mDesc.textContent=a.desc; mBadge.textContent=(mode==='sun'?'Soleil':'Lune'); mDuration.textContent=a.dur; mTip.textContent=a.tip; mGo.href=`https://www.google.com/maps?q=${encodeURIComponent(a.maps)}`; lockScroll(); document.body.classList.add('modal-open'); modalBackdrop.classList.add('show'); modalRoot.classList.add('show'); }`; lockScroll(); modalBackdrop.style.display='block'; modalRoot.classList.add('show'); }
-function hideModal(){ modalRoot.classList.remove('show'); modalBackdrop.classList.remove('show'); document.body.classList.remove('modal-open'); unlockScroll(); }
-[backdrop,mClose,closex].forEach(el=> el.addEventListener('click', hideModal));
+function showModal(act){
+  mTitle.textContent = act.title;
+  mMeta.textContent  = `${act.dur} · ${act.meta}`;
+  mDesc.textContent  = act.desc;
+  mGo.href = `https://www.google.com/maps?q=${encodeURIComponent(act.maps)}`;
+  mBadge.textContent = (mode==='sun')? 'Soleil' : 'Lune';
+  openModal();
+}
 
-function lockScroll(){ savedScrollY=window.scrollY||document.documentElement.scrollTop; document.body.style.position='fixed'; document.body.style.top=`-${savedScrollY}px`; document.body.style.left='0'; document.body.style.right='0'; document.body.style.width='100%'; }
-function unlockScroll(){ document.body.style.position=''; document.body.style.top=''; document.body.style.left=''; document.body.style.right=''; document.body.style.width=''; window.scrollTo(0, savedScrollY||0); }
+/* ===================== MODE SWITCH ===================== */
+function setMode(m){
+  if(mode===m) return;
+  mode = m;
+  items = [...DATA[mode]];
+  // BG + halo + particles
+  bg.className = 'bg ' + (mode==='sun'?'sun':'moon');
+  halo.className = 'halo ' + (mode==='sun'?'sun':'moon');
+  pSun.style.display = (mode==='sun')?'block':'none';
+  pMoon.style.display = (mode==='moon')?'block':'none';
+  // Tabs
+  if(mode==='sun'){ tabSun.classList.remove('off'); tabSun.setAttribute('aria-selected','true');
+                    tabMoon.classList.add('off');    tabMoon.setAttribute('aria-selected','false'); }
+  else            { tabMoon.classList.remove('off'); tabMoon.setAttribute('aria-selected','true');
+                    tabSun.classList.add('off');     tabSun.setAttribute('aria-selected','false'); }
+  // redraw
+  resizeWheel();
+  // conserver l’angle actuel mais réaligner visuellement
+  rotor.style.transform = `rotate(${angle}rad)`;
+}
+tabSun.addEventListener('click', ()=>setMode('sun'));
+tabMoon.addEventListener('click', ()=>setMode('moon'));
 
-/* ===================== Init ===================== */
-addEventListener('resize', ()=>{ drawWheel(); fitParticleCanvases(); }, {passive:true});
-addEventListener('orientationchange', ()=> setTimeout(()=>{ drawWheel(); fitParticleCanvases(); },120));
-document.body.dataset.mode='sun'; drawWheel(); fitParticleCanvases();
+/* ===================== INIT ===================== */
+resizeWheel();
+startParticles();
+rotor.style.transform = `rotate(${angle}rad)`;
+
+/* sécurité : empêcher pinch-zoom pendant drag dans la zone de la roue */
+document.getElementById('wheelWrap').addEventListener('gesturestart', e=>e.preventDefault());
 </script>
 </body>
 </html>
